@@ -29,6 +29,7 @@ Here's a list:
 
 - item 1
 - item 2
+- item 3
 
 And a numbered list:
 
