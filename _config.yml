@@ -39,9 +39,8 @@ baseurl: "/infinitoml" # the subpath of your site, e.g. "/blog".
 # Github and twitter are optional:
 minima:
   social_links:
-    twitter: "https://twitter.com/jrzaurin"
-    github: "https://github.com/jrzaurin"
-    linkedin: "https://www.linkedin.com/in/javier-rodriguez-zaurin-06277454/"
+    twitter: "jrzaurin"
+    github: "jrzaurin"
 
 # Set this to true to get LaTeX math equation support
 use_math:
