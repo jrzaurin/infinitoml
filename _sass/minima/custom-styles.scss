@@ -7,11 +7,5 @@
 /*-----------------------------------*/
 /*----- ADD YOUR STYLES BELOW -------*/
 
-// make non-headings slightly lighter
-.post-content p, .post-content li {
-   font-size: 10px;
-   color: #515151;
-}
-
 // If you want to turn off dark background for syntax highlighting, comment or delete the below line.
 @import "minima/fastpages-dracula-highlight";
