@@ -427,7 +427,7 @@ table td { text-overflow: ellipsis; overflow: hidden; max-width: 15em; }
 
 /*-----------------------------------*/
 /*----- ADD YOUR STYLES BELOW -------*/
-.post-content p, .post-content li { font-size: 15px; color: #515151; }
+.post-content p, .post-content li { font-size: 10px; color: #515151; }
 
 .language-python + .language-plaintext { border-left: 1px solid grey; margin-left: 1rem !important; }
 
