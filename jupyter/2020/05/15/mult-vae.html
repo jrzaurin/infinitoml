@@ -199,7 +199,8 @@ window.onload = wrap_img;
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
 <p>This post and the code here are part of a larger repo called <a href="https://github.com/jrzaurin/RecoTour">RecoTour</a>, where I normally explore and implement some recommendation algorithms that I consider interesting and/or useful (see <a href="https://medium.com/datadriveninvestor/recotour-a-tour-through-recommendation-algorithms-in-python-52d780628ab9">RecoTour</a> and <a href="https://towardsdatascience.com/recotour-ii-neural-recommendation-algorithms-49733938d56e">RecoTourII</a>). In every directory, I have included a <code>README</code> file and a series of explanatory notebooks that I hope help explaining the code. I keep adding algorithms from time to time, so stay tunned if you are interested.</p>
-<p>As always, let me first acknowledge the relevant people that did the hard work. This post and the companion repo are based on the paper “<a href="https://arxiv.org/pdf/1802.05814.pdf">Variational Autoencoders for Collaborative Filtering</a>” [1]. The code here and in that repo is partially inspired by the implementation from <a href="https://github.com/younggyoseo/vae-cf-pytorch">Younggyo Seo</a>. I have adapted the code to my coding preferences and added some options and flexibility to run multiple experiment.</p>
+<p>As always, let me first acknowledge the relevant people that did the hard work. This post and the companion repo are based on the papers “<a href="https://arxiv.org/pdf/1802.05814.pdf">Variational Autoencoders for Collaborative Filtering</a>” [1] and "<a href="https://arxiv.org/pdf/1312.6114.pdf">Auto-Encoding Variational Bayes</a>" [2]. The code here and in that repo is partially inspired by the implementation from <a href="https://github.com/younggyoseo/vae-cf-pytorch">Younggyo Seo</a>. I have adapted the code to my coding preferences and added a number of options and flexibility to run multiple experiment.</p>
+<p>The reason to take a deep dive into variational autoencoders for collaborative filtering is because they seem to be one of the few Deep Learning based algorithm (if not the only one) that is obtains better results that those using non-Deep Learning techniques <a href="https://arxiv.org/abs/1907.06902">[3]</a>.</p>
 
 </div>
 </div>
@@ -311,7 +312,7 @@ $$<p>Note that the expression above is the negative ELBO $\mathcal L$ (maximizin
 <h2 id="2.-Preparing-the-data">
 <a class="anchor" href="#2.-Preparing-the-data" aria-hidden="true"><span class="octicon octicon-link"></span></a>2. Preparing the data<a class="anchor-link" href="#2.-Preparing-the-data"> </a>
 </h2>
-<p>Throughout this exercise I will use two dataset. The <a href="http://jmcauley.ucsd.edu/data/amazon/">Amazon Movies and TV</a> dataset [3] [4] and the <a href="https://grouplens.org/datasets/movielens/20m/">Movilens</a> dataset. The later is used so I can make sure I am obtaining consistent results to those obtained in the paper. As we will see through the notebook, the Amazon dataset is significantly more challenging that the Movielens dataset.</p>
+<p>Throughout this exercise I will use two dataset. The <a href="http://jmcauley.ucsd.edu/data/amazon/">Amazon Movies and TV</a> dataset [4] [5] and the <a href="https://grouplens.org/datasets/movielens/20m/">Movilens</a> dataset. The later is used so I can make sure I am obtaining consistent results to those obtained in the paper. As we will see through the notebook, the Amazon dataset is significantly more challenging that the Movielens dataset.</p>
 <p>The data preparation is fairly simple, and is identical for both datasets. Therefore, I will focus here only on the Amazon dataset.</p>
 
 </div>
@@ -1235,7 +1236,7 @@ $$<p>Note that the expression above is the negative ELBO $\mathcal L$ (maximizin
 <h3 id="4.1-Annealing-schedule">
 <a class="anchor" href="#4.1-Annealing-schedule" aria-hidden="true"><span class="octicon octicon-link"></span></a>4.1 Annealing schedule<a class="anchor-link" href="#4.1-Annealing-schedule"> </a>
 </h3>
-<p>As mentioned before, we can interpret the Kullback-Leiber divergence as a regularization term. With that in mind, in a procedure inspired by <a href="https://arxiv.org/abs/1511.06349">Samuel R. Bowman et al, 2016</a> [5], Liang and co-authors linearly annealed the KL term (i.e. increase $\beta$) slowly over a large number of training steps.</p>
+<p>As mentioned before, we can interpret the Kullback-Leiber divergence as a regularization term. With that in mind, in a procedure inspired by <a href="https://arxiv.org/abs/1511.06349">Samuel R. Bowman et al, 2016</a> [6], Liang and co-authors linearly annealed the KL term (i.e. increase $\beta$) slowly over a large number of training steps.</p>
 <p>More specifically, the authors anneal the KL divergence all the way to $\beta$ = 1, reaching that value at around 80% of the total number of epochs used during the process. They then identify the best performing $\beta$ based on the peak validation metric, and retrain the model with the same annealing schedule, but stop increasing $\beta$ after reaching that value.</p>
 <p>If we go to <a href="https://github.com/dawenl/vae_cf/blob/master/VAE_ML20M_WWW2018.ipynb">their implementation</a>, these are the specifics of the process: using a batch size of 500 they set the total number of annealing steps to 200000. Given that the training dataset has a size of 116677, every epoch has 234 training steps. Their <code>anneal_cap</code> value, i.e. the maximum annealing reached during training, is set to 0.2, and during training they use the following approach:</p>
 <div class="highlight"><pre><span></span><span class="k">if</span> <span class="n">total_anneal_steps</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
@@ -2042,9 +2043,9 @@ valid: 100%|██████████| 2/2 [00:02&lt;00:00,  1.03s/it, loss
 <p>The next, most immediate projects I want to add to the repo are:</p>
 <ol>
 <li>
-<a href="https://arxiv.org/pdf/2002.02126.pdf">Sequential Variational Autoencoders for Collaborative Filtering</a> [6]</li>
+<a href="https://arxiv.org/pdf/2002.02126.pdf">Sequential Variational Autoencoders for Collaborative Filtering</a> [7]</li>
 <li>
-<a href="https://arxiv.org/pdf/2002.02126.pdf">LightGCN: Simplifying and Powering Graph Convolution Network for Recommendation</a> [7]</li>
+<a href="https://arxiv.org/pdf/2002.02126.pdf">LightGCN: Simplifying and Powering Graph Convolution Network for Recommendation</a> [8]</li>
 </ol>
 <p>But before that, I will be re-visiting the [nlp-stuff repo] and also updating the pytorch-widedeep package.</p>
 <p>If you manage to read all that, I hope you found it useful.</p>
@@ -2058,9 +2059,10 @@ valid: 100%|██████████| 2/2 [00:02&lt;00:00,  1.03s/it, loss
 <p><strong>References</strong>:</p>
 <p>[1] Dawen Liang, Rahul G. Krishnan, Matthew D. Hoffman, Tony Jebara,  2018. Variational Autoencoders for Collaborative Filtering:  <a href="https://arxiv.org/pdf/1802.05814.pdf">arXiv:1802.05814v1</a></p>
 <p>[2] Diederik P Kingma, Max Welling, 2014. Auto-Encoding Variational Bayes: <a href="https://arxiv.org/pdf/1312.6114.pdf">arXiv:1312.6114v10</a></p>
-<p>[3] J. McAuley, C. Targett, J. Shi, A. van den Hengel. 2015. Image-based recommendations on styles and substitutes. <a href="https://arxiv.org/pdf/1506.04757.pdf">arXiv:1506.04757v1</a></p>
-<p>[4] R. He, J. McAuley, 2016. Modeling the visual evolution of fashion trends with one-class collaborative filtering. <a href="https://arxiv.org/pdf/1602.01585.pdf">arXiv:1602.01585v1</a></p>
-<p>[5] Samuel R. Bowman, Luke Vilnis, Oriol Vinyals, Andrew M. Dai, Rafal Jozefowicz, Samy Bengio, 2016. Generating Sentences from a Continuous Space: <a href="https://arxiv.org/abs/1511.06349.pdf">arXiv:1511.06349v4</a></p>
+<p>[3] Maurizio Ferrari Dacrema, Paolo Cremonesi, Dietmar Jannach. Are We Really Making Much Progress? A Worrying Analysis of Recent Neural Recommendation Approaches: <a href="https://arxiv.org/pdf/1907.06902.pdf">arXiv:1907.06902v3</a></p>
+<p>[4] J. McAuley, C. Targett, J. Shi, A. van den Hengel. 2015. Image-based recommendations on styles and substitutes. <a href="https://arxiv.org/pdf/1506.04757.pdf">arXiv:1506.04757v1</a></p>
+<p>[5] R. He, J. McAuley, 2016. Modeling the visual evolution of fashion trends with one-class collaborative filtering. <a href="https://arxiv.org/pdf/1602.01585.pdf">arXiv:1602.01585v1</a></p>
+<p>[6] Samuel R. Bowman, Luke Vilnis, Oriol Vinyals, Andrew M. Dai, Rafal Jozefowicz, Samy Bengio, 2016. Generating Sentences from a Continuous Space: <a href="https://arxiv.org/abs/1511.06349.pdf">arXiv:1511.06349v4</a></p>
 <p>[7] Noveen Sachdeva, Giuseppe Manco, Ettore Ritacco, Vikram Pudi, 2018. Sequential Variational Autoencoders for Collaborative Filtering: <a href="https://arxiv.org/pdf/1811.09975.pdf">arXiv:1811.09975v1 </a></p>
 <p>[8] Xiangnan He, Kuan Deng, Xiang Wang, Yan Li, Yongdong Zhang, Meng Wang, 2020. LightGCN: Simplifying and Powering Graph Convolution Network for Recommendation <a href="https://arxiv.org/abs/2002.02126.pdf">arXiv:2002.02126v2 </a></p>
 
