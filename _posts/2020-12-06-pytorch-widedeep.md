@@ -1,7 +1,7 @@
 ---
 keywords: fastai
 description: a flexible package to combine tabular data with text and images using wide and deep models.
-title: "pytorch-widedeep: deep learning for tabular data"
+title: "pytorch-widedeep, deep learning for tabular data I: data preprocessing, model components and basic use"
 author: Javier Rodriguez
 toc: true 
 badges: true
@@ -28,7 +28,8 @@ layout: notebook
 
 <div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>In this post I describe the main components of the <code>Python</code> library <code>pytorch-widedeep</code>, which is intended to be a flexible package to use Deep Learning (hereafter DL) with tabular data and combine it with text and images via wide and deep models. <code>pytorch-widedeep</code> is based on Heng-Tze Cheng et al., 2016 <a href="https://arxiv.org/abs/1606.07792">paper</a>.</p>
+<p>This is the first of two posts introducing <code>pytorch-widedeep</code>, which is intended to be a flexible package to use Deep Learning (hereafter DL) with tabular data and combine it with text and images via wide and deep models. <code>pytorch-widedeep</code> is partially based on Heng-Tze Cheng et al., 2016 <a href="https://arxiv.org/abs/1606.07792">paper</a>.</p>
+<p>in this post I describe the data preprocessing functionalities of the library, the main components of the model, and the basic use of the library. In the second (and final) post of the series I will show a more advance use of <code>pytorch-widedeep</code>.</p>
 <h2 id="1.-Installation">1. Installation<a class="anchor-link" href="#1.-Installation"> </a></h2><p>To install the package simply use pip:</p>
 <div class="highlight"><pre><span></span>pip install pytorch-widedeep
 </pre></div>
@@ -36,9 +37,10 @@ layout: notebook
 <div class="highlight"><pre><span></span>pip install git+https://github.com/jrzaurin/pytorch-widedeep.git
 </pre></div>
 <p><strong>Important note for Mac Users</strong></p>
-<p>Note that the following comments are not directly related to the package, but to the interplay between <code>pytorch</code> and OSX (more precisely <code>pytorch</code>'s dependency on <code>OpenMP</code> I believe) and in general parallel processing in Mac.</p>
-<p>In the first place, at the time of writing the latest <code>pytorch</code> version is <code>1.7</code>. This version is known to have some <a href="https://stackoverflow.com/questions/64772335/pytorch-w-parallelnative-cpp206">issues</a> when running on Mac and the data-loaders might not run in parallel. On the other hand, since <code>Python 3.8</code> the <code>multiprocessing</code> library start method changed from <a href="https://docs.python.org/3/library/multiprocessing.html#contexts-and-start-methods">'fork' to 'spawn'</a>. This also affects the data-loaders (for any torch version) and they will not run in parallel.</p>
-<p>Therefore, for Mac users I suggest using <code>python 3.7</code> and <code>torch &lt;= 1.6</code> (with its corresponding <code>torchvision</code> version, i.e. <code>&lt;= 0.7.0</code>). I could have enforced this versioning via the <code>setup.py</code> file. However, there are a number of unknowns and I preferred to leave it as it is. For example I developed the package using macOS Catalina and maybe some of this issues are not present in the new release Big Sur. Also, I hope that they release soon a patch for <code>pytorch 1.7</code> and some, if not all these problems disappear.</p>
+<p>Note that the following comments are not directly related to the package, but to the interplay between <code>pytorch</code> and <code>OSX</code> (more precisely <code>pytorch</code>'s dependency on <code>OpenMP</code> I believe) and in general parallel processing in Mac.</p>
+<p>In the first place, at the time of writing the latest <code>pytorch</code> version is <code>1.7</code>. This version is known to have some <a href="https://stackoverflow.com/questions/64772335/pytorch-w-parallelnative-cpp206">issues</a> when running on Mac and the data-loaders might not run in parallel.</p>
+<p>On the other hand, since <code>Python 3.8</code> the <code>multiprocessing</code> library start method changed from <a href="https://docs.python.org/3/library/multiprocessing.html#contexts-and-start-methods">'fork' to 'spawn'</a>. This also affects the data-loaders (for any torch version) and they will not run in parallel.</p>
+<p>Therefore, for Mac users I suggest using <code>python 3.7</code> and <code>torch &lt;= 1.6</code> (with its corresponding <code>torchvision</code> version, i.e. <code>&lt;= 0.7.0</code>). I could have enforced this versioning via the <code>setup.py</code> file. However, there are a number of unknowns and I preferred to leave it as it is. For example I developed the package using <em>macOS Catalina</em> and maybe some of this issues are not present in the new release <em>Big Sur</em>. Also, I hope that they release soon a patch for <code>pytorch 1.7</code> and some, if not all these problems disappear.</p>
 <p>Installing <code>pytorch-widedeep</code> via <code>pip</code> will install the latest version. Therefore, if these problems are present and the dataloaders do not run in parallel, one can easily downgrade manually:</p>
 <div class="highlight"><pre><span></span>pip install <span class="nv">torch</span><span class="o">==</span><span class="m">1</span>.6.0 <span class="nv">torchvision</span><span class="o">==</span><span class="m">0</span>.7.0
 </pre></div>
@@ -49,28 +51,22 @@ layout: notebook
 </div>
 <div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h2 id="2.pytorch-widedeep--DL-Architectures">2.<code>pytorch-widedeep</code>  DL Architectures<a class="anchor-link" href="#2.pytorch-widedeep--DL-Architectures"> </a></h2><p>As I mentioned earlier <code>pytorch-widedeep</code> combines tabular data with text and images via wide and deep models. With that in mind, the two main architectures one can build with a few lines of code using <code>pytorch-widedeep</code> are:</p>
-<p align="center">
-  <img width="700" src="figures/pytorch-widedeep/arch_1.png">
-</p><p><strong>Architecture 1</strong>: architecture 1 combines the <code>Wide</code>, linear model with the outputs from the <code>DeepDense</code> or <code>DeepDenseResnet</code>, <code>DeepText</code> and <code>DeepImage</code> components connected to a final output neuron or neurons, depending on whether we are performing a binary classification or regression, or a multi-class classification. The components within the faded-pink rectangles are concatenated. Later in the post I will describe in detail each of the components, for now, let's just move on.</p>
+<h2 id="2.-pytorch-widedeep--DL-Architectures">2. <code>pytorch-widedeep</code>  DL Architectures<a class="anchor-link" href="#2.-pytorch-widedeep--DL-Architectures"> </a></h2><p>As I mentioned earlier <code>pytorch-widedeep</code> combines tabular data with text and images via wide and deep models.</p>
+<p>With that in mind, the two main architectures that can be built with a few lines of code using <code>pytorch-widedeep</code> are:</p>
+<p><img src="/infinitoml/images/copied_from_nb/figures/pytorch-widedeep/arch_1.png" alt=""></p>
+<p><strong>Architecture 1</strong>: architecture 1 combines the <code>Wide</code>, linear model with the outputs from the <code>DeepDense</code> or <code>DeepDenseResnet</code>, <code>DeepText</code> and <code>DeepImage</code> components connected to a final output neuron or neurons, depending on whether we are performing a binary classification or regression, or a multi-class classification. The components within the faded-pink rectangles are concatenated. Later in the post I will describe in detail each of the individual components.</p>
 <p>In math terms, and following the notation in the <a href="https://arxiv.org/abs/1606.07792">paper</a>, Architecture 1 can be formulated as:</p>
-<p align="center">
-  <img width="500" src="figures/pytorch-widedeep/architecture_1_math.png">
-</p><p>Where $W$ are the weight matrices applied to the wide model and to the final activations of the deep models, '$a$' are these final activations, and $\phi(x)$ are the cross product transformations of the original features '$x$'. In case you are wondering what are <em>"cross product transformations"</em>, here is a quote taken directly from the paper: <em>"For binary features, a cross-product transformation (e.g., “AND(gender=female, language=en)”) is 1 if and only if the constituent features (“gender=female” and “language=en”) are all 1, and 0 otherwise"</em>.</p>
-<p align="center">
-  <img width="700" src="figures/pytorch-widedeep/arch_2.png">
-</p><p><strong>Architecture 2</strong>: architecture 2 combines the <code>Wide</code>, linear model with the <code>Deep</code> components of the model connected to the output neuron(s), after the different Deep components have been themselves combined through a FC-Head (that I refer as <code>DeepHead</code>).</p>
+$$
+preds = \sigma(W^{T}_{wide}[x, \phi(x)] + W^{T}_{deepdense}a^{(l_f)}_{dense} + W^{T}_{deeptext}a^{(l_f)}_{text} + W^{T}_{deepimage}a^{(l_f)}_{image} + b) 
+$$<p>Where $W$ are the weight matrices applied to the wide model and to the final activations of the deep models, '$a$' are the final activations, and $\phi(x)$ are the cross product transformations of the original features '$x$'. In case you are wondering what are <em>"cross product transformations"</em>, here is a quote taken directly from the paper: <em>"For binary features, a cross-product transformation (e.g., “AND(gender=female, language=en)”) is 1 if and only if the constituent features (“gender=female” and “language=en”) are all 1, and 0 otherwise"</em>.</p>
+<p><img src="/infinitoml/images/copied_from_nb/figures/pytorch-widedeep/arch_2.png" alt=""></p>
+<p><strong>Architecture 2</strong>: architecture 2 combines the <code>Wide</code>, linear model with the <code>Deep</code> components of the model connected to the output neuron(s), after the different <code>Deep</code> components have been themselves combined through a Fully-Connected-Head (hereafter FC-Head) (that I refer as <code>DeepHead</code>).</p>
 <p>In math terms, and following the notation in the <a href="https://arxiv.org/abs/1606.07792">paper</a>, Architecture 2 can be formulated as:</p>
-<p align="center">
-  <img width="300" src="figures/pytorch-widedeep/architecture_2_math.png">
-</p><p>Is imporrtant to metion that each individual component, <code>wide</code>, <code>deepdense</code> (either <code>DeepDense</code> or <code>DeepDenseResnet</code>), <code>deeptext</code> and <code>deepimage</code>, can be used independently and in isolation. For example, one could use only <code>wide</code>, which is in simply a linear model. Or use <code>DeepDense</code> which is in essence a similar implementation to that of the <a href="https://docs.fast.ai/tabular.learner">Tabular</a> API in the fastai library (which I strongly recommend).</p>
-
-</div>
-</div>
-</div>
-<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
-<div class="text_cell_render border-box-sizing rendered_html">
-<h2 id="&#160;3.-Quick-start">&#160;3. Quick start<a class="anchor-link" href="#&#160;3.-Quick-start"> </a></h2><p>Before diving into the details of the library let's just say that you just want to quickly run one example and get the feel of how <code>pytorch-widedeep</code> works. Let go through a quick example using the adult census dataset. In this example we will be fitting a model comprised by a <code>Wide</code> and <code>DeepDense</code> components</p>
+$$
+preds = \sigma(W^{T}_{wide}[x, \phi(x)] + W^{T}_{deephead}a^{(l_f)}_{deephead} + b)
+$$<p>Is important to mention that each individual component, <code>wide</code>, <code>deepdense</code> (either <code>DeepDense</code> or <code>DeepDenseResnet</code>), <code>deeptext</code> and <code>deepimage</code>, can be used independently and in isolation. For example, one could use only <code>wide</code>, which is in simply a linear model. Or use <code>DeepDense</code> which is in essence a similar implementation to that of the <a href="https://docs.fast.ai/tabular.learner">Tabular</a> API in the <code>fastai</code> library (which I strongly recommend).</p>
+<h2 id="3.-Quick-start-(TL;DR)">3. Quick start (TL;DR)<a class="anchor-link" href="#3.-Quick-start-(TL;DR)"> </a></h2><p>Before diving into the details of the library, let's just say that you just want to quickly run one example and get the feel of how <code>pytorch-widedeep</code> works. Let's do so using the <a href="http://archive.ics.uci.edu/ml/datasets/Adult">adult census dataset</a>.</p>
+<p>In this example we will be fitting a model comprised by two components: <code>Wide</code> and <code>DeepDense</code>.</p>
 
 </div>
 </div>
@@ -135,7 +131,9 @@ layout: notebook
 
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span><span class="n">adult</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">adult_train</span><span class="p">,</span> <span class="n">adult_test</span> <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span><span class="n">adult</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">stratify</span><span class="o">=</span><span class="n">adult</span><span class="o">.</span><span class="n">income_label</span><span class="p">)</span>
+
+<span class="n">adult</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
 </pre></div>
 
     </div>
@@ -299,21 +297,19 @@ layout: notebook
 <span class="kn">from</span> <span class="nn">pytorch_widedeep.models</span> <span class="kn">import</span> <span class="n">Wide</span><span class="p">,</span> <span class="n">DeepDense</span><span class="p">,</span> <span class="n">WideDeep</span>
 <span class="kn">from</span> <span class="nn">pytorch_widedeep.metrics</span> <span class="kn">import</span> <span class="n">Accuracy</span>
 
-<span class="n">adult_train</span><span class="p">,</span> <span class="n">adult_test</span> <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span><span class="n">adult</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">stratify</span><span class="o">=</span><span class="n">adult</span><span class="o">.</span><span class="n">income_label</span><span class="p">)</span>
-
-<span class="c1"># prepare wide, crossed, embedding and continuous columns and target</span>
+<span class="c1"># define wide, crossed, embedding and continuous columns, and target</span>
 <span class="n">wide_cols</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;education&quot;</span><span class="p">,</span> <span class="s2">&quot;relationship&quot;</span><span class="p">,</span> <span class="s2">&quot;workclass&quot;</span><span class="p">,</span> <span class="s2">&quot;occupation&quot;</span><span class="p">,</span> <span class="s2">&quot;native_country&quot;</span><span class="p">,</span> <span class="s2">&quot;gender&quot;</span><span class="p">]</span>
 <span class="n">cross_cols</span> <span class="o">=</span> <span class="p">[(</span><span class="s2">&quot;education&quot;</span><span class="p">,</span> <span class="s2">&quot;occupation&quot;</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;native_country&quot;</span><span class="p">,</span> <span class="s2">&quot;occupation&quot;</span><span class="p">)]</span>
 <span class="n">embed_cols</span> <span class="o">=</span> <span class="p">[(</span><span class="s2">&quot;education&quot;</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;workclass&quot;</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;occupation&quot;</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;native_country&quot;</span><span class="p">,</span> <span class="mi">10</span><span class="p">)]</span>
 <span class="n">cont_cols</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;age&quot;</span><span class="p">,</span> <span class="s2">&quot;hours_per_week&quot;</span><span class="p">]</span>
 <span class="n">target</span> <span class="o">=</span> <span class="n">adult_train</span><span class="p">[</span><span class="s2">&quot;income_label&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
 
-<span class="c1"># wide component</span>
+<span class="c1"># prepare wide component</span>
 <span class="n">preprocess_wide</span> <span class="o">=</span> <span class="n">WidePreprocessor</span><span class="p">(</span><span class="n">wide_cols</span><span class="o">=</span><span class="n">wide_cols</span><span class="p">,</span> <span class="n">crossed_cols</span><span class="o">=</span><span class="n">cross_cols</span><span class="p">)</span>
 <span class="n">X_wide</span> <span class="o">=</span> <span class="n">preprocess_wide</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">adult_train</span><span class="p">)</span>
 <span class="n">wide</span> <span class="o">=</span> <span class="n">Wide</span><span class="p">(</span><span class="n">wide_dim</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">X_wide</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">pred_dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 
-<span class="c1"># deepdense component</span>
+<span class="c1"># prepare deepdense component</span>
 <span class="n">preprocess_deep</span> <span class="o">=</span> <span class="n">DensePreprocessor</span><span class="p">(</span><span class="n">embed_cols</span><span class="o">=</span><span class="n">embed_cols</span><span class="p">,</span> <span class="n">continuous_cols</span><span class="o">=</span><span class="n">cont_cols</span><span class="p">)</span>
 <span class="n">X_deep</span> <span class="o">=</span> <span class="n">preprocess_deep</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">adult_train</span><span class="p">)</span>
 <span class="n">deepdense</span> <span class="o">=</span> <span class="n">DeepDense</span><span class="p">(</span><span class="n">hidden_layers</span><span class="o">=</span><span class="p">[</span><span class="mi">64</span><span class="p">,</span> <span class="mi">32</span><span class="p">],</span> <span class="n">deep_column_idx</span><span class="o">=</span><span class="n">preprocess_deep</span><span class="o">.</span><span class="n">deep_column_idx</span><span class="p">,</span> 
@@ -355,9 +351,9 @@ layout: notebook
 <div class="output_area">
 
 <div class="output_subarea output_stream output_stderr output_text">
-<pre>epoch 1: 100%|██████████| 153/153 [00:02&lt;00:00, 52.44it/s, loss=0.526, metrics={&#39;acc&#39;: 0.7471}]
-epoch 2: 100%|██████████| 153/153 [00:02&lt;00:00, 57.72it/s, loss=0.409, metrics={&#39;acc&#39;: 0.8116}]
-predict: 100%|██████████| 39/39 [00:00&lt;00:00, 196.34it/s]
+<pre>epoch 1: 100%|██████████| 153/153 [00:03&lt;00:00, 44.63it/s, loss=0.496, metrics={&#39;acc&#39;: 0.7609}]
+epoch 2: 100%|██████████| 153/153 [00:02&lt;00:00, 53.67it/s, loss=0.389, metrics={&#39;acc&#39;: 0.819}] 
+predict: 100%|██████████| 39/39 [00:00&lt;00:00, 160.54it/s]
 </pre>
 </div>
 </div>
@@ -368,6 +364,1451 @@ predict: 100%|██████████| 39/39 [00:00&lt;00:00, 196.34it/s]
 </div>
     {% endraw %}
 
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="4.-Preprocessors">4. Preprocessors<a class="anchor-link" href="#4.-Preprocessors"> </a></h2><p>As you can see in Section 3, and as with any ML algorithm, the data need to be prepared/preprocessed before going through the model. This is handled internally by the <code>pytorch-widedeep</code> preprocessors. There is one preprocessor per <code>WideDeep</code> model component:</p>
+
+<pre><code>WidePreprocessor
+DensePreprocessor
+TextPreprocessor
+ImagePreprocessor</code></pre>
+<p>"Behind the scenes", these preprocessors use a series of helper functions and classes that are in the <code>utils</code> module. Initially I did not intend to "expose" them to the user, but I believe they can be useful for all sorts of preprocessing tasks, so I made them available. The <code>utils</code> tools are:</p>
+
+<pre><code>deep_utils.LabelEncoder
+text_utils.simple_preprocess
+text_utils.get_texts
+text_utils.pad_sequences
+text_utils.build_embeddings_matrix
+fastai_transforms.Tokenizer
+fastai_transforms.Vocab
+image_utils.SimplePreprocessor
+image_utils.AspectAwarePreprocessor</code></pre>
+<p>They are accessible directly from <code>utils</code>, e.g.:</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pytorch_widedeep.utils</span> <span class="kn">import</span> <span class="n">LabelEncoder</span>
+</pre></div>
+<p>Note that here I will be concentrating directly on the preprocessors. If you want more details on the <code>utils</code> tools, have a look to the <a href="https://github.com/jrzaurin/pytorch-widedeep/tree/master/pytorch_widedeep/utils">source code</a> or read the <a href="https://pytorch-widedeep.readthedocs.io/en/latest/index.html">documentation</a>.</p>
+<h3 id="4.1.-WidePreprocessor">4.1. <code>WidePreprocessor</code><a class="anchor-link" href="#4.1.-WidePreprocessor"> </a></h3><p>The Wide component of the model is a linear model that in principle, could be implemented as a linear layer receiving the result of on one-hot encoded categorical columns. However, this is not memory efficient (at all). Therefore, we implement a liner layer as an Embedding layer plus a bias. I will explain it in a bit more detail later.</p>
+<p>With that in mind, <code>WidePreprocessor</code> simply encodes the categories numerically so that they are the indexes of the lookup table that is an Embedding layer.</p>
+
+</div>
+</div>
+</div>
+    {% raw %}
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">pytorch_widedeep.preprocessing</span> <span class="kn">import</span> <span class="n">WidePreprocessor</span>
+
+<span class="n">wide_cols</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;education&#39;</span><span class="p">,</span> <span class="s1">&#39;relationship&#39;</span><span class="p">,</span><span class="s1">&#39;workclass&#39;</span><span class="p">,</span><span class="s1">&#39;occupation&#39;</span><span class="p">,</span><span class="s1">&#39;native_country&#39;</span><span class="p">,</span><span class="s1">&#39;gender&#39;</span><span class="p">]</span>
+<span class="n">crossed_cols</span> <span class="o">=</span> <span class="p">[(</span><span class="s1">&#39;education&#39;</span><span class="p">,</span> <span class="s1">&#39;occupation&#39;</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;native_country&#39;</span><span class="p">,</span> <span class="s1">&#39;occupation&#39;</span><span class="p">)]</span>
+
+<span class="n">wide_preprocessor</span> <span class="o">=</span> <span class="n">WidePreprocessor</span><span class="p">(</span><span class="n">wide_cols</span><span class="o">=</span><span class="n">wide_cols</span><span class="p">,</span> <span class="n">crossed_cols</span><span class="o">=</span><span class="n">crossed_cols</span><span class="p">)</span>
+<span class="n">X_wide</span> <span class="o">=</span> <span class="n">wide_preprocessor</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">adult</span><span class="p">)</span>
+<span class="c1"># From here on, any new observation can be prepared by simply running `.transform`</span>
+<span class="c1"># new_X_wide = wide_preprocessor.transform(new_df)</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+</div>
+    {% endraw %}
+
+    {% raw %}
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">X_wide</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>array([[  1,  17,  23, ...,  89,  91, 316],
+       [  2,  18,  23, ...,  89,  92, 317],
+       [  3,  18,  24, ...,  89,  93, 318],
+       ...,
+       [  2,  20,  23, ...,  90, 103, 323],
+       [  2,  17,  23, ...,  89, 103, 323],
+       [  2,  21,  29, ...,  90, 115, 324]])</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    {% endraw %}
+
+    {% raw %}
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">X_wide</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>array([  1,  17,  23,  32,  47,  89,  91, 316])</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    {% endraw %}
+
+    {% raw %}
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">wide_preprocessor</span><span class="o">.</span><span class="n">inverse_transform</span><span class="p">(</span><span class="n">X_wide</span><span class="p">[:</span><span class="mi">1</span><span class="p">])</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+<div class="output_html rendered_html output_subarea output_execute_result">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>education</th>
+      <th>relationship</th>
+      <th>workclass</th>
+      <th>occupation</th>
+      <th>native_country</th>
+      <th>gender</th>
+      <th>education_occupation</th>
+      <th>native_country_occupation</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>11th</td>
+      <td>own-child</td>
+      <td>private</td>
+      <td>machine-op-inspct</td>
+      <td>united-states</td>
+      <td>male</td>
+      <td>11th-machine-op-inspct</td>
+      <td>united-states-machine-op-inspct</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    {% endraw %}
+
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>As we can see, <code>wide_preprocessor</code> numerically encodes the <code>wide_cols</code> and the <code>crossed_cols</code>, which can be recovered using the method <code>inverse_transform</code>.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h3 id="4.2-DensePreprocessor">4.2 <code>DensePreprocessor</code><a class="anchor-link" href="#4.2-DensePreprocessor"> </a></h3><p>Simply, <code>DensePreprocessor</code>, label-encodes the categorical columns and normalises the numerical ones (unless otherwise specified).</p>
+
+</div>
+</div>
+</div>
+    {% raw %}
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">pytorch_widedeep.preprocessing</span> <span class="kn">import</span> <span class="n">DensePreprocessor</span>
+
+<span class="c1"># cat_embed_cols = [(column_name, embed_dim), ...]</span>
+<span class="n">cat_embed_cols</span> <span class="o">=</span> <span class="p">[(</span><span class="s1">&#39;education&#39;</span><span class="p">,</span><span class="mi">10</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;relationship&#39;</span><span class="p">,</span><span class="mi">8</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;workclass&#39;</span><span class="p">,</span><span class="mi">10</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;occupation&#39;</span><span class="p">,</span><span class="mi">10</span><span class="p">),(</span><span class="s1">&#39;native_country&#39;</span><span class="p">,</span><span class="mi">10</span><span class="p">)]</span>
+<span class="n">continuous_cols</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;age&quot;</span><span class="p">,</span><span class="s2">&quot;hours_per_week&quot;</span><span class="p">]</span>
+
+<span class="n">deep_preprocessor</span> <span class="o">=</span> <span class="n">DensePreprocessor</span><span class="p">(</span><span class="n">embed_cols</span><span class="o">=</span><span class="n">cat_embed_cols</span><span class="p">,</span> <span class="n">continuous_cols</span><span class="o">=</span><span class="n">continuous_cols</span><span class="p">)</span>
+<span class="n">X_deep</span> <span class="o">=</span> <span class="n">deep_preprocessor</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">adult</span><span class="p">)</span>
+<span class="c1"># From here on, any new observation can be prepared by simply running `.transform`</span>
+<span class="c1"># new_X_deep = deep_preprocessor.transform(new_df)</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+</div>
+    {% endraw %}
+
+    {% raw %}
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">X_deep</span><span class="p">[:</span><span class="mi">5</span><span class="p">])</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>[[ 0.          0.          0.          0.          0.         -0.99512893
+  -0.03408696]
+ [ 1.          1.          0.          1.          0.         -0.04694151
+   0.77292975]
+ [ 2.          1.          1.          2.          0.         -0.77631645
+  -0.03408696]
+ [ 3.          1.          0.          0.          0.          0.39068346
+  -0.03408696]
+ [ 3.          0.          2.          3.          0.         -1.50569139
+  -0.84110367]]
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+    {% endraw %}
+
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Behind the scenes, <code>DeepProcessor</code> uses <a href="https://pytorch-widedeep.readthedocs.io/en/latest/utils/dense_utils.html">LabelEncoder</a>, simply a numerical encoder for categorical features, available via</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pytorch_widedeep.utils</span> <span class="kn">import</span> <span class="n">LabelEncoder</span>
+</pre></div>
+<h3 id="4.3.-TextPreprocessor">4.3. <code>TextPreprocessor</code><a class="anchor-link" href="#4.3.-TextPreprocessor"> </a></h3><p>This preprocessor returns the tokenized, padded sequences that will be directly fed to the stack of LSTMs (unless a custom <code>deeptext</code> component is used).</p>
+<p>To illustrate the text and image preprocessors I will use a small sample of the Airbnb listing dataset, which you can get <a href="http://insideairbnb.com/get-the-data.html">here</a>.</p>
+
+</div>
+</div>
+</div>
+    {% raw %}
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">airbnb</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s2">&quot;data/airbnb/airbnb_sample.csv&quot;</span><span class="p">)</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+</div>
+    {% endraw %}
+
+    {% raw %}
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">texts</span> <span class="o">=</span> <span class="n">airbnb</span><span class="o">.</span><span class="n">description</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+<span class="n">texts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>&#34;My bright double bedroom with a large window has a relaxed feeling! It comfortably fits one or two and is centrally located just two blocks from Finsbury Park. Enjoy great restaurants in the area and easy access to easy transport tubes, trains and buses. Babies and children of all ages are welcome. Hello Everyone, I&#39;m offering my lovely double bedroom in Finsbury Park area (zone 2) for let in a shared apartment.  You will share the apartment with me and it is fully furnished with a self catering kitchen. Two people can easily sleep well as the room has a queen size bed. I also have a travel cot for a baby for guest with small children.  I will require a deposit up front as a security gesture on both our parts and will be given back to you when you return the keys.  I trust anyone who will be responding to this add would treat my home with care and respect .  Best Wishes  Alina Guest will have access to the self catering kitchen and bathroom. There is the flat is equipped wifi internet,&#34;</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    {% endraw %}
+
+    {% raw %}
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">pytorch_widedeep.preprocessing</span> <span class="kn">import</span> <span class="n">TextPreprocessor</span>
+
+<span class="n">text_preprocessor</span> <span class="o">=</span> <span class="n">TextPreprocessor</span><span class="p">(</span><span class="n">text_col</span><span class="o">=</span><span class="s1">&#39;description&#39;</span><span class="p">)</span>
+<span class="n">X_text</span> <span class="o">=</span> <span class="n">text_preprocessor</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">airbnb</span><span class="p">)</span>
+<span class="c1"># From here on, any new observation can be prepared by simply running `.transform`</span>
+<span class="c1"># new_X_text = text_preprocessor.transform(new_df)</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>The vocabulary contains 2192 tokens
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+    {% endraw %}
+
+    {% raw %}
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">X_text</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>[  29   48   37  367  818   17  910   17  177   15  122  349   53  879
+ 1174  126  393   40  911    0   23  228   71  819    9   53   55 1380
+  225   11   18  308   18 1564   10  755    0  942  239   53   55    0
+   11   36 1013  277 1974   70   62   15 1475    9  943    5  251    5
+    0    5    0    5  177   53   37   75   11   10  294  726   32    9
+   42    5   25   12   10   22   12  136  100  145]
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+    {% endraw %}
+
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p><code>TextPreprocessor</code> uses the utilities within the <a href="https://pytorch-widedeep.readthedocs.io/en/latest/utils/text_utils.html">text_utils</a> and the <a href="https://pytorch-widedeep.readthedocs.io/en/latest/utils/fastai_transforms.html">fastai_transforms</a> modules. Again, all the utilities within those modules are are directly accessible from <code>utils</code>, e.g.:</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pytorch_widedeep.utils</span> <span class="kn">import</span> <span class="n">simple_preprocess</span><span class="p">,</span> <span class="n">pad_sequences</span><span class="p">,</span> <span class="n">build_embeddings_matrix</span><span class="p">,</span> <span class="n">Tokenizer</span><span class="p">,</span> <span class="n">Vocab</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h3 id="4.4-ImagePreprocessor">4.4 <code>ImagePreprocessor</code><a class="anchor-link" href="#4.4-ImagePreprocessor"> </a></h3><p>Finally, <code>ImagePreprocessor</code> simply resizes the images, being aware of the aspect ratio. By default they will be resized to <code>(224, 224, ...)</code>. This is because the default <code>deepdense</code> component of the model is a pre-trained <code>ResNet</code> model, which requires inputs of height and width of 224.</p>
+<p>Let's have a look</p>
+
+</div>
+</div>
+</div>
+    {% raw %}
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">pytorch_widedeep.preprocessing</span> <span class="kn">import</span> <span class="n">ImagePreprocessor</span>
+
+<span class="n">image_preprocessor</span> <span class="o">=</span> <span class="n">ImagePreprocessor</span><span class="p">(</span><span class="n">img_col</span><span class="o">=</span><span class="s1">&#39;id&#39;</span><span class="p">,</span> <span class="n">img_path</span><span class="o">=</span><span class="s2">&quot;data/airbnb/property_picture/&quot;</span><span class="p">)</span>
+<span class="n">X_images</span> <span class="o">=</span> <span class="n">image_preprocessor</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">airbnb</span><span class="p">)</span>
+<span class="c1"># From here on, any new observation can be prepared by simply running `.transform`</span>
+<span class="c1"># new_X_images = image_preprocessor.transform(new_df)</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>Reading Images from data/airbnb/property_picture/
+</pre>
+</div>
+</div>
+
+<div class="output_area">
+
+<div class="output_subarea output_stream output_stderr output_text">
+<pre>  8%|▊         | 79/1001 [00:00&lt;00:02, 394.13it/s]</pre>
+</div>
+</div>
+
+<div class="output_area">
+
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>Resizing
+</pre>
+</div>
+</div>
+
+<div class="output_area">
+
+<div class="output_subarea output_stream output_stderr output_text">
+<pre>100%|██████████| 1001/1001 [00:02&lt;00:00, 396.28it/s]
+</pre>
+</div>
+</div>
+
+<div class="output_area">
+
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>Computing normalisation metrics
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+    {% endraw %}
+
+    {% raw %}
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">X_images</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>(224, 224, 3)</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    {% endraw %}
+
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p><code>ImagePreprocessor</code> uses two helpers: <a href="https://pytorch-widedeep.readthedocs.io/en/latest/utils/image_utils.html"><code>SimplePreprocessor</code> and <code>AspectAwarePreprocessor</code></a>, available from the <code>utils</code> module, e.g.:</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pytorch_widedeep.utils</span> <span class="kn">import</span> <span class="n">SimplePreprocessor</span><span class="p">,</span> <span class="n">AspectAwarePreprocessor</span>
+</pre></div>
+<p>These two classes are directly taken from Adrian Rosebrock's fantastic book "Deep Learning for Computer Vision". Therefore, all credit to Adrian.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="5.-Model-Components">5. Model Components<a class="anchor-link" href="#5.-Model-Components"> </a></h2>
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Once the data is prepared to be "fed" to the model, let's have a look to the components that can be used to build a wide and deep model. The 5 main components of <code>WideDeep</code> are:</p>
+
+<pre><code>Wide
+DeepDense or DeepDenseResnet
+DeepText
+DeepImage
+deephead</code></pre>
+<p>The first 4 of them will be collected and combined by the <code>WideDeep</code> "collector" class, while the 5th one is optional and added to the <code>WideDeep</code> model through its corresponding parameters: <code>deephead</code> or alternatively <code>head_layers</code>, <code>head_dropout</code> and <code>head_batchnorm</code></p>
+<h3 id="5.1.-Wide">5.1. <code>Wide</code><a class="anchor-link" href="#5.1.-Wide"> </a></h3><p>The wide component is a Linear layer "plugged" into the output neuron(s)</p>
+<p>The only particularity of our implementation is that we have implemented the linear layer via an Embedding layer plus a bias. While the implementations are equivalent, the latter is faster and far more memory efficient, since we do not need to one hot encode the categorical features.</p>
+<p>Let's have a look:</p>
+
+</div>
+</div>
+</div>
+    {% raw %}
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="kn">from</span> <span class="nn">torch</span> <span class="kn">import</span> <span class="n">nn</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+</div>
+    {% endraw %}
+
+    {% raw %}
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s1">&#39;color&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="s1">&#39;b&#39;</span><span class="p">,</span> <span class="s1">&#39;g&#39;</span><span class="p">],</span> <span class="s1">&#39;size&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;s&#39;</span><span class="p">,</span> <span class="s1">&#39;n&#39;</span><span class="p">,</span> <span class="s1">&#39;l&#39;</span><span class="p">]})</span>
+<span class="n">df</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+<div class="output_html rendered_html output_subarea output_execute_result">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>color</th>
+      <th>size</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>r</td>
+      <td>s</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>b</td>
+      <td>n</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>g</td>
+      <td>l</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    {% endraw %}
+
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>one hot encoded, the first observation (<code>color: r, size: s</code>) would be</p>
+
+</div>
+</div>
+</div>
+    {% raw %}
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">obs_0_oh</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">1.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">]))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s1">&#39;float32&#39;</span><span class="p">)</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+</div>
+    {% endraw %}
+
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>if we simply numerically encode (or label encode) the values:</p>
+
+</div>
+</div>
+</div>
+    {% raw %}
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">obs_0_le</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">]))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s1">&#39;int64&#39;</span><span class="p">)</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+</div>
+    {% endraw %}
+
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Note that in the implementation of the package we start from 1, saving 0 for padding, i.e. unseen values.</p>
+<p>Now, let's see if the two implementations are equivalent</p>
+
+</div>
+</div>
+</div>
+    {% raw %}
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># we have 6 different values. Let&#39;s assume we are performing a regression, so pred_dim = 1</span>
+<span class="n">lin</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+</div>
+    {% endraw %}
+
+    {% raw %}
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">emb</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Embedding</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> 
+<span class="n">emb</span><span class="o">.</span><span class="n">weight</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span><span class="n">lin</span><span class="o">.</span><span class="n">weight</span><span class="o">.</span><span class="n">reshape_as</span><span class="p">(</span><span class="n">emb</span><span class="o">.</span><span class="n">weight</span><span class="p">))</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+</div>
+    {% endraw %}
+
+    {% raw %}
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">lin</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">obs_0_oh</span><span class="p">))</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>tensor([-0.0025], grad_fn=&lt;AddBackward0&gt;)</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    {% endraw %}
+
+    {% raw %}
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">emb</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">obs_0_le</span><span class="p">))</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">+</span> <span class="n">lin</span><span class="o">.</span><span class="n">bias</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>tensor([-0.0025], grad_fn=&lt;AddBackward0&gt;)</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    {% endraw %}
+
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>And this is precisely how the linear component <code>Wide</code> is implemented</p>
+
+</div>
+</div>
+</div>
+    {% raw %}
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">pytorch_widedeep.models</span> <span class="kn">import</span> <span class="n">Wide</span>
+<span class="n">wide</span> <span class="o">=</span> <span class="n">Wide</span><span class="p">(</span><span class="n">wide_dim</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">pred_dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">wide</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>Wide(
+  (wide_linear): Embedding(11, 1, padding_idx=0)
+)</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    {% endraw %}
+
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Again, let me emphasize that even though the input dim is 10, the <code>Embedding</code> layer has 11 weights. This is because we save 0 for padding, which is used for unseen values during the encoding process</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h3 id="5.2.-DeepDense-and-DeepDenseResnet">5.2. <code>DeepDense</code> and <code>DeepDenseResnet</code><a class="anchor-link" href="#5.2.-DeepDense-and-DeepDenseResnet"> </a></h3><p>There are two alternatives for the so called <code>deepdense</code> component of the model: <code>DeepDense</code> and <code>DeepDenseResnet</code>.</p>
+<p><code>DeepDense</code> is comprised by a stack of dense layers that receive the embedding representation of the categorical features concatenated with numerical continuous features (normalized unless otherwise specified). For those familiar with the <code>Fastai</code>'s tabular API, <code>DeepDense</code> is almost identical to their <a href="https://github.com/fastai/fastai/blob/f633356359a29f8d869ce36659f7aa25660e946a/fastai/tabular/model.py#L28">tabular model</a>.</p>
+<p><code>DeepDenseResnet</code> is similar to <code>DeepDense</code> but instead of dense layers, the embedding representation of the categorical features concatenated with numerical continuous features are passed through a series of dense <code>ResNet</code> layers. Each basic block comprises the following operations:</p>
+<p>{% include image.html alt="resnet_block" max-width="400" file="/infinitoml/images/copied_from_nb/figures/pytorch-widedeep/resnet_block.png" %}</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Let's have a look first to <code>DeepDense</code>:</p>
+
+</div>
+</div>
+</div>
+    {% raw %}
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">pytorch_widedeep.models</span> <span class="kn">import</span> <span class="n">DeepDense</span>
+
+<span class="c1"># fake dataset</span>
+<span class="n">X_deep</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">((</span><span class="n">torch</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span><span class="o">.</span><span class="n">random_</span><span class="p">(</span><span class="mi">4</span><span class="p">),</span> <span class="n">torch</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">1</span><span class="p">)),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">colnames</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;a&#39;</span><span class="p">,</span> <span class="s1">&#39;b&#39;</span><span class="p">,</span> <span class="s1">&#39;c&#39;</span><span class="p">,</span> <span class="s1">&#39;d&#39;</span><span class="p">,</span> <span class="s1">&#39;e&#39;</span><span class="p">]</span>
+<span class="n">embed_input</span> <span class="o">=</span> <span class="p">[(</span><span class="n">u</span><span class="p">,</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">)</span> <span class="k">for</span> <span class="n">u</span><span class="p">,</span><span class="n">i</span><span class="p">,</span><span class="n">j</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">colnames</span><span class="p">[:</span><span class="mi">4</span><span class="p">],</span> <span class="p">[</span><span class="mi">4</span><span class="p">]</span><span class="o">*</span><span class="mi">4</span><span class="p">,</span> <span class="p">[</span><span class="mi">8</span><span class="p">]</span><span class="o">*</span><span class="mi">4</span><span class="p">)]</span>
+<span class="n">deep_column_idx</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span><span class="n">v</span> <span class="k">for</span> <span class="n">v</span><span class="p">,</span><span class="n">k</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">colnames</span><span class="p">)}</span>
+<span class="n">continuous_cols</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;e&#39;</span><span class="p">]</span>
+
+<span class="c1"># my advice would be to not use dropout in the last layer, but I add the option because you never </span>
+<span class="c1"># know..there is crazy people everywhere.</span>
+<span class="n">deepdense</span> <span class="o">=</span> <span class="n">DeepDense</span><span class="p">(</span><span class="n">hidden_layers</span><span class="o">=</span><span class="p">[</span><span class="mi">16</span><span class="p">,</span><span class="mi">8</span><span class="p">],</span> <span class="n">dropout</span><span class="o">=</span><span class="p">[</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.</span><span class="p">],</span> <span class="n">batchnorm</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">deep_column_idx</span><span class="o">=</span><span class="n">deep_column_idx</span><span class="p">,</span>
+                      <span class="n">embed_input</span><span class="o">=</span><span class="n">embed_input</span><span class="p">,</span> <span class="n">continuous_cols</span><span class="o">=</span><span class="n">continuous_cols</span><span class="p">)</span>
+<span class="n">deepdense</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>DeepDense(
+  (embed_layers): ModuleDict(
+    (emb_layer_a): Embedding(4, 8)
+    (emb_layer_b): Embedding(4, 8)
+    (emb_layer_c): Embedding(4, 8)
+    (emb_layer_d): Embedding(4, 8)
+  )
+  (embed_dropout): Dropout(p=0.0, inplace=False)
+  (dense): Sequential(
+    (dense_layer_0): Sequential(
+      (0): Linear(in_features=33, out_features=16, bias=True)
+      (1): LeakyReLU(negative_slope=0.01, inplace=True)
+      (2): BatchNorm1d(16, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (3): Dropout(p=0.5, inplace=False)
+    )
+    (dense_layer_1): Sequential(
+      (0): Linear(in_features=16, out_features=8, bias=True)
+      (1): LeakyReLU(negative_slope=0.01, inplace=True)
+      (2): BatchNorm1d(8, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (3): Dropout(p=0.0, inplace=False)
+    )
+  )
+)</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    {% endraw %}
+
+    {% raw %}
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">deepdense</span><span class="p">(</span><span class="n">X_deep</span><span class="p">)</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>tensor([[ 2.0000, -0.5269, -1.1534, -0.7052,  0.1334,  0.5031, -0.5072, -0.2827],
+        [-0.5021, -0.4808, -1.1650, -0.6735, -0.6695, -0.7397, -0.7122, -0.9599],
+        [-0.4999, -0.4643,  0.1839,  1.8831, -0.6786, -0.7465, -0.0641,  1.6376],
+        [-0.4980,  1.9994,  1.0750, -0.6854,  1.8988,  1.7483, -0.6635, -0.9845],
+        [-0.4999, -0.5273,  1.0595,  0.1809, -0.6840, -0.7652,  1.9469,  0.5894]],
+       grad_fn=&lt;NativeBatchNormBackward&gt;)</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    {% endraw %}
+
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Let's now have a look to DeepDenseResnet:</p>
+
+</div>
+</div>
+</div>
+    {% raw %}
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">pytorch_widedeep.models</span> <span class="kn">import</span> <span class="n">DeepDenseResnet</span>
+
+<span class="n">deepdense</span> <span class="o">=</span> <span class="n">DeepDenseResnet</span><span class="p">(</span><span class="n">blocks</span><span class="o">=</span><span class="p">[</span><span class="mi">16</span><span class="p">,</span><span class="mi">8</span><span class="p">],</span> <span class="n">dropout</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">deep_column_idx</span><span class="o">=</span><span class="n">deep_column_idx</span><span class="p">,</span>
+                      <span class="n">embed_input</span><span class="o">=</span><span class="n">embed_input</span><span class="p">,</span> <span class="n">continuous_cols</span><span class="o">=</span><span class="n">continuous_cols</span><span class="p">)</span>
+
+<span class="n">deepdense</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>DeepDenseResnet(
+  (embed_layers): ModuleDict(
+    (emb_layer_a): Embedding(4, 8)
+    (emb_layer_b): Embedding(4, 8)
+    (emb_layer_c): Embedding(4, 8)
+    (emb_layer_d): Embedding(4, 8)
+  )
+  (embed_dropout): Dropout(p=0.0, inplace=False)
+  (dense_resnet): Sequential(
+    (lin1): Linear(in_features=33, out_features=16, bias=True)
+    (bn1): BatchNorm1d(16, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+    (block_0): BasicBlock(
+      (lin1): Linear(in_features=16, out_features=8, bias=True)
+      (bn1): BatchNorm1d(8, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (leaky_relu): LeakyReLU(negative_slope=0.01, inplace=True)
+      (dp): Dropout(p=0.5, inplace=False)
+      (lin2): Linear(in_features=8, out_features=8, bias=True)
+      (bn2): BatchNorm1d(8, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (resize): Sequential(
+        (0): Linear(in_features=16, out_features=8, bias=True)
+        (1): BatchNorm1d(8, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      )
+    )
+  )
+)</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    {% endraw %}
+
+    {% raw %}
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">deepdense</span><span class="p">(</span><span class="n">X_deep</span><span class="p">)</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>tensor([[-2.0257e-03, -8.2463e-04, -5.6662e-03, -8.1120e-03, -1.8452e-02,
+          4.7077e-01, -8.8988e-03, -2.7973e-02],
+        [ 3.4863e-02,  2.3159e+00, -1.8634e-02,  2.5506e+00, -9.6052e-03,
+          3.1158e-01, -2.1400e-02, -1.6308e-03],
+        [-1.5221e-04,  1.4656e+00, -2.1838e-03,  6.6686e-01,  1.5154e+00,
+         -6.4522e-03,  6.2711e-01, -3.5276e-03],
+        [ 1.8946e-01, -2.3349e-02,  3.0933e+00,  1.2676e-01,  4.8451e-02,
+          1.7869e+00,  2.8733e+00,  8.2579e-01],
+        [-6.5402e-05, -1.3641e-02, -4.4490e-03, -2.5330e-02,  1.2419e+00,
+         -1.9240e-02, -4.7049e-03,  2.4874e+00]], grad_fn=&lt;LeakyReluBackward1&gt;)</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    {% endraw %}
+
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h3 id="5.3.-DeepText">5.3. <code>DeepText</code><a class="anchor-link" href="#5.3.-DeepText"> </a></h3><p>The <code>DeepText</code> class within the <code>WideDeep</code> package is a standard and simple stack of LSTMs on top of word embeddings. You could also add a FC-Head on top of the LSTMs. The word embeddings can be pre-trained. In the future I aim to include full pre-trained models (maybe bringing the <a href="https://github.com/huggingface">huggingface</a> library, <a href="https://arxiv.org/abs/1801.06146">ULMFiT</a> or <a href="https://arxiv.org/abs/1911.11423">SHA-RNN</a>) so that the combination between text and images is "fair".</p>
+<p>On the other hand, while I recommend using the <code>Wide</code> and <code>DeepDense</code> classes within <code>pytorch-widedeep</code> when building the corresponding model components, it is very likely that the user will want to use custom text and image models. That is perfectly possible. Simply, build them and pass them as the corresponding parameters. Note that the custom models <strong>MUST</strong> return a last layer of activations (i.e. not the final prediction) so that these activations are collected by <code>WideDeep</code> and combined accordingly. In addition, the models <strong>MUST</strong> also contain an attribute <code>output_dim</code> with the size of these last layers of activations.</p>
+<p>I will illustrate all of the above more in detail in the second post of these series.</p>
+<p>Let's have a look to <code>DeepText</code></p>
+
+</div>
+</div>
+</div>
+    {% raw %}
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">from</span> <span class="nn">pytorch_widedeep.models</span> <span class="kn">import</span> <span class="n">DeepText</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+</div>
+    {% endraw %}
+
+    {% raw %}
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">X_text</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">((</span><span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">([</span><span class="mi">5</span><span class="p">,</span><span class="mi">1</span><span class="p">]),</span> <span class="n">torch</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span><span class="o">.</span><span class="n">random_</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">4</span><span class="p">)),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">deeptext</span> <span class="o">=</span> <span class="n">DeepText</span><span class="p">(</span><span class="n">vocab_size</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">hidden_dim</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">n_layers</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">padding_idx</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">embed_dim</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+<span class="n">deeptext</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>DeepText(
+  (word_embed): Embedding(4, 4, padding_idx=0)
+  (rnn): LSTM(4, 4, batch_first=True)
+)</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    {% endraw %}
+
+    {% raw %}
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">deeptext</span><span class="p">(</span><span class="n">X_text</span><span class="p">)</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>tensor([[ 0.2640, -0.0959,  0.1475, -0.3345],
+        [ 0.2475, -0.2401, -0.0616, -0.2565],
+        [ 0.2495, -0.0659,  0.0581, -0.3021],
+        [ 0.2640, -0.0959,  0.1475, -0.3345],
+        [ 0.2366, -0.0954,  0.0820, -0.2843]], grad_fn=&lt;SelectBackward&gt;)</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    {% endraw %}
+
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>You could, if you wanted, add a Fully Connected Head (FC-Head) on top of it</p>
+
+</div>
+</div>
+</div>
+    {% raw %}
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">deeptext</span> <span class="o">=</span> <span class="n">DeepText</span><span class="p">(</span><span class="n">vocab_size</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">hidden_dim</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">n_layers</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">padding_idx</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">embed_dim</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> 
+                    <span class="n">head_layers</span><span class="o">=</span><span class="p">[</span><span class="mi">8</span><span class="p">,</span><span class="mi">4</span><span class="p">],</span> <span class="n">head_batchnorm</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">head_dropout</span><span class="o">=</span><span class="p">[</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">])</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+</div>
+    {% endraw %}
+
+    {% raw %}
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">deeptext</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>DeepText(
+  (word_embed): Embedding(4, 4, padding_idx=0)
+  (rnn): LSTM(4, 8, batch_first=True)
+  (texthead): Sequential(
+    (dense_layer_0): Sequential(
+      (0): Linear(in_features=8, out_features=4, bias=True)
+      (1): LeakyReLU(negative_slope=0.01, inplace=True)
+      (2): BatchNorm1d(4, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (3): Dropout(p=0.5, inplace=False)
+    )
+  )
+)</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    {% endraw %}
+
+    {% raw %}
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">deeptext</span><span class="p">(</span><span class="n">X_text</span><span class="p">)</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>tensor([[ 0.0635, -0.0163, -0.1344, -0.0133],
+        [ 0.1258, -0.0337, -0.1043,  0.0016],
+        [ 0.0622, -0.2228,  0.2869, -0.0240],
+        [ 0.0953, -0.1360,  0.1782,  0.0140],
+        [-0.1278, -0.3161,  0.2760, -0.1063]], grad_fn=&lt;SelectBackward&gt;)</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    {% endraw %}
+
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h3 id="5.4.-DeepImage">5.4. <code>DeepImage</code><a class="anchor-link" href="#5.4.-DeepImage"> </a></h3><p>The <code>DeepImage</code> class within the <code>WideDeep</code> package builds either a pre-trained <code>ResNet</code> (18, 34, or 50. Default is 18) or a stack of CNNs, to which one can add a FC-Head. If is a pre-trained ResNet, you can chose how many layers you want to defrost deep into the network with the parameter <code>freeze</code>. Read <a href="https://pytorch-widedeep.readthedocs.io/en/latest/model_components.html#pytorch_widedeep.models.deep_image.DeepImage">here</a> for more details.</p>
+
+</div>
+</div>
+</div>
+    {% raw %}
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">pytorch_widedeep.models</span> <span class="kn">import</span> <span class="n">DeepImage</span>
+
+<span class="n">X_img</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">rand</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">224</span><span class="p">,</span><span class="mi">224</span><span class="p">))</span>
+<span class="n">deepimage</span> <span class="o">=</span> <span class="n">DeepImage</span><span class="p">(</span><span class="n">pretrained</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">head_layers</span><span class="o">=</span><span class="p">[</span><span class="mi">512</span><span class="p">,</span> <span class="mi">64</span><span class="p">,</span> <span class="mi">8</span><span class="p">])</span>
+
+<span class="n">deepimage</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>DeepImage(
+  (backbone): Sequential(
+    (0): Sequential(
+      (0): Conv2d(3, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+      (1): BatchNorm2d(64, eps=1e-05, momentum=0.01, affine=True, track_running_stats=True)
+      (2): LeakyReLU(negative_slope=0.1, inplace=True)
+      (maxpool): MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)
+    )
+    (1): Sequential(
+      (0): Conv2d(64, 128, kernel_size=(1, 1), stride=(1, 1))
+      (1): BatchNorm2d(128, eps=1e-05, momentum=0.01, affine=True, track_running_stats=True)
+      (2): LeakyReLU(negative_slope=0.1, inplace=True)
+    )
+    (2): Sequential(
+      (0): Conv2d(128, 256, kernel_size=(1, 1), stride=(1, 1))
+      (1): BatchNorm2d(256, eps=1e-05, momentum=0.01, affine=True, track_running_stats=True)
+      (2): LeakyReLU(negative_slope=0.1, inplace=True)
+    )
+    (3): Sequential(
+      (0): Conv2d(256, 512, kernel_size=(1, 1), stride=(1, 1))
+      (1): BatchNorm2d(512, eps=1e-05, momentum=0.01, affine=True, track_running_stats=True)
+      (2): LeakyReLU(negative_slope=0.1, inplace=True)
+      (adaptiveavgpool): AdaptiveAvgPool2d(output_size=(1, 1))
+    )
+  )
+  (imagehead): Sequential(
+    (dense_layer_0): Sequential(
+      (0): Linear(in_features=512, out_features=64, bias=True)
+      (1): LeakyReLU(negative_slope=0.01, inplace=True)
+      (2): Dropout(p=0.0, inplace=False)
+    )
+    (dense_layer_1): Sequential(
+      (0): Linear(in_features=64, out_features=8, bias=True)
+      (1): LeakyReLU(negative_slope=0.01, inplace=True)
+      (2): Dropout(p=0.0, inplace=False)
+    )
+  )
+)</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    {% endraw %}
+
+    {% raw %}
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">deepimage</span><span class="p">(</span><span class="n">X_img</span><span class="p">)</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+<div class="output_area">
+
+
+
+<div class="output_text output_subarea output_execute_result">
+<pre>tensor([[-0.0002,  0.0899, -0.0004, -0.0009,  0.1232,  0.0338,  0.0357,  0.0239],
+        [-0.0002,  0.0909, -0.0004, -0.0009,  0.1224,  0.0345,  0.0358,  0.0231]],
+       grad_fn=&lt;LeakyReluBackward1&gt;)</pre>
+</div>
+
+</div>
+
+</div>
+</div>
+
+</div>
+    {% endraw %}
+
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h3 id="5.5.-deephead">5.5. <code>deephead</code><a class="anchor-link" href="#5.5.-deephead"> </a></h3><p>Note that I do not use uppercase here. This is because, by default, the <code>deephead</code> is not defined outside <code>WideDeep</code> as a class on its own, like the the rest of the components.</p>
+<p>When defining the <code>WideDeep</code> model there is a parameter called head_layers (and the corresponding <code>head_dropout</code>, and <code>head_batchnorm</code>) that define the FC-head on top of <code>DeeDense</code>, <code>DeepText</code> and <code>DeepImage</code>.</p>
+<p>Of course, you could also chose to define it yourself externally and pass it using the parameter <code>deephead</code>. Have a look</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="6.-Conclusion">6. Conclusion<a class="anchor-link" href="#6.-Conclusion"> </a></h2><p>This is the first of 2 posts introducing the python library <code>pytorch-widedeep</code>. This library is intended to be a flexible frame to combine tabular data with text and images via wide and deep models. Of course, it can also be used directly on "traditional" tabular data, without text and/or images, as we saw in Section 3.</p>
+<p>In this post I have shown how to quickly start using the library (Section 3) and explained the utilities available in the <code>preprocessing</code> module (Section 4) and and model component definitions (Section 5), available in the <code>models</code> module.</p>
+<p>In the next post I will show more advance uses that hopefully will illustrate <code>pytorch-widedeep</code>'s flexibility to build wide and deep models.</p>
+
+</div>
+</div>
+</div>
 </div>
  
 
