@@ -28,8 +28,10 @@ layout: notebook
 
 <div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>This is the first of two posts introducing <code>pytorch-widedeep</code>, which is intended to be a flexible package to use Deep Learning (hereafter DL) with tabular data and combine it with text and images via wide and deep models. <code>pytorch-widedeep</code> is partially based on Heng-Tze Cheng et al., 2016 <a href="https://arxiv.org/abs/1606.07792">paper</a>.</p>
-<p>in this post I describe the data preprocessing functionalities of the library, the main components of the model, and the basic use of the library. In the second (and final) post of the series I will show a more advance use of <code>pytorch-widedeep</code>.</p>
+<p>This is the first of two posts introducing <code>pytorch-widedeep</code>, which is intended to be a flexible package to use Deep Learning (hereafter DL) with tabular data and combine it with text and images via wide and deep models. <code>pytorch-widedeep</code> is partially based on Heng-Tze Cheng et al., 2016 <a href="https://arxiv.org/abs/1606.07792">paper</a> [1].</p>
+<p>in this post I describe the data preprocessing functionalities of the library, the main components of the model, and the basic use of the library. In a second post I will show a more advance use of <code>pytorch-widedeep</code>.</p>
+<p>Before I move any further I just want to emphasize that there are a number of libraries that implement functionalities to use DL on tabular data. To cite a few, the ubiquitous and fantastic <a href="https://docs.fast.ai/tutorial.tabular.html">FastAI</a> (and their tabular api), the "rising star" <a href="https://github.com/NVIDIA/NVTabular">NVTabular</a>, the powerful <a href="https://github.com/dreamquark-ai/tabnet">pytorch-tabnet</a> based on work of Sercan O. Arik and Tomas Pfisterfrom [2], which is starting to take victories in Kaggle competitions, and perhaps my favourite <a href="https://arxiv.org/abs/2003.06505">AutoGluon Tabular</a> [3].</p>
+<p>It is not my intention to "compete" against these libraries. <code>pytorch-widedeep</code> started as an attempt to package and automate an algorithm I had to use a couple of times at work and ended up becoming the entertaining process that is building a library. Needless to say that if you wanted to apply DL to tabular data you should go and check all the libraries I mentioned before (as well as this one 🙂).</p>
 <h2 id="1.-Installation">1. Installation<a class="anchor-link" href="#1.-Installation"> </a></h2><p>To install the package simply use pip:</p>
 <div class="highlight"><pre><span></span>pip install pytorch-widedeep
 </pre></div>
@@ -65,7 +67,7 @@ $$<p>Where $W$ are the weight matrices applied to the wide model and to the fina
 $$
 preds = \sigma(W^{T}_{wide}[x, \phi(x)] + W^{T}_{deephead}a^{(l_f)}_{deephead} + b)
 $$<p>Is important to mention that each individual component, <code>wide</code>, <code>deepdense</code> (either <code>DeepDense</code> or <code>DeepDenseResnet</code>), <code>deeptext</code> and <code>deepimage</code>, can be used independently and in isolation. For example, one could use only <code>wide</code>, which is in simply a linear model. Or use <code>DeepDense</code> which is in essence a similar implementation to that of the <a href="https://docs.fast.ai/tabular.learner">Tabular</a> API in the <code>fastai</code> library (which I strongly recommend).</p>
-<h2 id="3.-Quick-start-(TL;DR)">3. Quick start (TL;DR)<a class="anchor-link" href="#3.-Quick-start-(TL;DR)"> </a></h2><p>Before diving into the details of the library, let's just say that you just want to quickly run one example and get the feel of how <code>pytorch-widedeep</code> works. Let's do so using the <a href="http://archive.ics.uci.edu/ml/datasets/Adult">adult census dataset</a>.</p>
+<h2 id="3.-Quick-start-(TL;DR)">3. Quick start (TL;DR)<a class="anchor-link" href="#3.-Quick-start-(TL;DR)"> </a></h2><p>Maybe I should have started with this section, but I thought that knowing at least the architectures one can build with <code>pytorch-widedeep</code> was "kind-off" necessary. In any case and before diving into the details of the library, let's just say that you just want to quickly run one example and get the feel of how <code>pytorch-widedeep</code> works. Let's do so using the <a href="http://archive.ics.uci.edu/ml/datasets/Adult">adult census dataset</a>.</p>
 <p>In this example we will be fitting a model comprised by two components: <code>Wide</code> and <code>DeepDense</code>.</p>
 
 </div>
@@ -286,6 +288,13 @@ $$<p>Is important to mention that each individual component, <code>wide</code>, 
 </div>
     {% endraw %}
 
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>The following lines below is all you need</p>
+
+</div>
+</div>
+</div>
     {% raw %}
     
 <div class="cell border-box-sizing code_cell rendered">
@@ -351,9 +360,9 @@ $$<p>Is important to mention that each individual component, <code>wide</code>, 
 <div class="output_area">
 
 <div class="output_subarea output_stream output_stderr output_text">
-<pre>epoch 1: 100%|██████████| 153/153 [00:03&lt;00:00, 44.63it/s, loss=0.496, metrics={&#39;acc&#39;: 0.7609}]
-epoch 2: 100%|██████████| 153/153 [00:02&lt;00:00, 53.67it/s, loss=0.389, metrics={&#39;acc&#39;: 0.819}] 
-predict: 100%|██████████| 39/39 [00:00&lt;00:00, 160.54it/s]
+<pre>epoch 1: 100%|██████████| 153/153 [00:03&lt;00:00, 46.74it/s, loss=0.571, metrics={&#39;acc&#39;: 0.7135}]
+epoch 2: 100%|██████████| 153/153 [00:02&lt;00:00, 51.37it/s, loss=0.395, metrics={&#39;acc&#39;: 0.8159}]
+predict: 100%|██████████| 39/39 [00:00&lt;00:00, 182.93it/s]
 </pre>
 </div>
 </div>
@@ -387,8 +396,7 @@ image_utils.AspectAwarePreprocessor</code></pre>
 <div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pytorch_widedeep.utils</span> <span class="kn">import</span> <span class="n">LabelEncoder</span>
 </pre></div>
 <p>Note that here I will be concentrating directly on the preprocessors. If you want more details on the <code>utils</code> tools, have a look to the <a href="https://github.com/jrzaurin/pytorch-widedeep/tree/master/pytorch_widedeep/utils">source code</a> or read the <a href="https://pytorch-widedeep.readthedocs.io/en/latest/index.html">documentation</a>.</p>
-<h3 id="4.1.-WidePreprocessor">4.1. <code>WidePreprocessor</code><a class="anchor-link" href="#4.1.-WidePreprocessor"> </a></h3><p>The Wide component of the model is a linear model that in principle, could be implemented as a linear layer receiving the result of on one-hot encoded categorical columns. However, this is not memory efficient (at all). Therefore, we implement a liner layer as an Embedding layer plus a bias. I will explain it in a bit more detail later.</p>
-<p>With that in mind, <code>WidePreprocessor</code> simply encodes the categories numerically so that they are the indexes of the lookup table that is an Embedding layer.</p>
+<h3 id="4.1.-WidePreprocessor">4.1. <code>WidePreprocessor</code><a class="anchor-link" href="#4.1.-WidePreprocessor"> </a></h3><p>The Wide component of the model is a linear model that in principle, could be implemented as a linear layer receiving the result of on one-hot encoded categorical columns. However, this is not memory efficient (at all). Therefore, we implement a liner layer as an Embedding layer plus a bias. I will explain it in a bit more detail later. For now, just know that <code>WidePreprocessor</code> simply encodes the categories numerically so that they are the indexes of the lookup table that is an Embedding layer.</p>
 
 </div>
 </div>
@@ -573,7 +581,7 @@ image_utils.AspectAwarePreprocessor</code></pre>
 </div>
 <div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h3 id="4.2-DensePreprocessor">4.2 <code>DensePreprocessor</code><a class="anchor-link" href="#4.2-DensePreprocessor"> </a></h3><p>Simply, <code>DensePreprocessor</code>, label-encodes the categorical columns and normalises the numerical ones (unless otherwise specified).</p>
+<h3 id="4.2-DensePreprocessor">4.2 <code>DensePreprocessor</code><a class="anchor-link" href="#4.2-DensePreprocessor"> </a></h3><p>Simply, <code>DensePreprocessor</code> label-encodes the categorical columns and normalizes the numerical ones (unless otherwise specified).</p>
 
 </div>
 </div>
@@ -646,10 +654,10 @@ image_utils.AspectAwarePreprocessor</code></pre>
 
 <div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>Behind the scenes, <code>DeepProcessor</code> uses <a href="https://pytorch-widedeep.readthedocs.io/en/latest/utils/dense_utils.html">LabelEncoder</a>, simply a numerical encoder for categorical features, available via</p>
+<p>Behind the scenes, <code>DeepProcessor</code> uses <a href="https://pytorch-widedeep.readthedocs.io/en/latest/utils/dense_utils.html">LabelEncoder</a>, simply a custom numerical encoder for categorical features, available via</p>
 <div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pytorch_widedeep.utils</span> <span class="kn">import</span> <span class="n">LabelEncoder</span>
 </pre></div>
-<h3 id="4.3.-TextPreprocessor">4.3. <code>TextPreprocessor</code><a class="anchor-link" href="#4.3.-TextPreprocessor"> </a></h3><p>This preprocessor returns the tokenized, padded sequences that will be directly fed to the stack of LSTMs (unless a custom <code>deeptext</code> component is used).</p>
+<h3 id="4.3.-TextPreprocessor">4.3. <code>TextPreprocessor</code><a class="anchor-link" href="#4.3.-TextPreprocessor"> </a></h3><p>This preprocessor returns the tokenized, padded sequences that will be directly "fed" to the <code>deeptext</code> component.</p>
 <p>To illustrate the text and image preprocessors I will use a small sample of the Airbnb listing dataset, which you can get <a href="http://insideairbnb.com/get-the-data.html">here</a>.</p>
 
 </div>
@@ -913,7 +921,7 @@ image_utils.AspectAwarePreprocessor</code></pre>
 </div>
 <div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>Once the data is prepared to be "fed" to the model, let's have a look to the components that can be used to build a wide and deep model. The 5 main components of <code>WideDeep</code> are:</p>
+<p>Let's now have a look to the components that can be used to build a wide and deep model. The 5 main components of <code>WideDeep</code> are:</p>
 
 <pre><code>Wide
 DeepDense or DeepDenseResnet
@@ -1136,7 +1144,7 @@ deephead</code></pre>
 
 
 <div class="output_text output_subarea output_execute_result">
-<pre>tensor([-0.0025], grad_fn=&lt;AddBackward0&gt;)</pre>
+<pre>tensor([0.0875], grad_fn=&lt;AddBackward0&gt;)</pre>
 </div>
 
 </div>
@@ -1169,7 +1177,7 @@ deephead</code></pre>
 
 
 <div class="output_text output_subarea output_execute_result">
-<pre>tensor([-0.0025], grad_fn=&lt;AddBackward0&gt;)</pre>
+<pre>tensor([0.0875], grad_fn=&lt;AddBackward0&gt;)</pre>
 </div>
 
 </div>
@@ -1338,11 +1346,11 @@ deephead</code></pre>
 
 
 <div class="output_text output_subarea output_execute_result">
-<pre>tensor([[ 2.0000, -0.5269, -1.1534, -0.7052,  0.1334,  0.5031, -0.5072, -0.2827],
-        [-0.5021, -0.4808, -1.1650, -0.6735, -0.6695, -0.7397, -0.7122, -0.9599],
-        [-0.4999, -0.4643,  0.1839,  1.8831, -0.6786, -0.7465, -0.0641,  1.6376],
-        [-0.4980,  1.9994,  1.0750, -0.6854,  1.8988,  1.7483, -0.6635, -0.9845],
-        [-0.4999, -0.5273,  1.0595,  0.1809, -0.6840, -0.7652,  1.9469,  0.5894]],
+<pre>tensor([[ 1.5131, -0.2351,  1.9998,  1.9794, -0.7550, -0.7819, -0.5403, -0.7078],
+        [-1.0226, -0.1453, -0.4958, -0.5826,  1.7906,  1.1094,  1.6101,  0.1329],
+        [-1.0305, -1.3890, -0.4859, -0.5942,  0.4141, -0.8311, -0.9921, -0.5953],
+        [-0.2079,  1.7296, -0.5191, -0.5849, -0.7293, -0.8299,  0.7122, -0.7265],
+        [ 0.7479,  0.0398, -0.4990, -0.2177, -0.7204,  1.3335, -0.7899,  1.8967]],
        grad_fn=&lt;NativeBatchNormBackward&gt;)</pre>
 </div>
 
@@ -1445,16 +1453,16 @@ deephead</code></pre>
 
 
 <div class="output_text output_subarea output_execute_result">
-<pre>tensor([[-2.0257e-03, -8.2463e-04, -5.6662e-03, -8.1120e-03, -1.8452e-02,
-          4.7077e-01, -8.8988e-03, -2.7973e-02],
-        [ 3.4863e-02,  2.3159e+00, -1.8634e-02,  2.5506e+00, -9.6052e-03,
-          3.1158e-01, -2.1400e-02, -1.6308e-03],
-        [-1.5221e-04,  1.4656e+00, -2.1838e-03,  6.6686e-01,  1.5154e+00,
-         -6.4522e-03,  6.2711e-01, -3.5276e-03],
-        [ 1.8946e-01, -2.3349e-02,  3.0933e+00,  1.2676e-01,  4.8451e-02,
-          1.7869e+00,  2.8733e+00,  8.2579e-01],
-        [-6.5402e-05, -1.3641e-02, -4.4490e-03, -2.5330e-02,  1.2419e+00,
-         -1.9240e-02, -4.7049e-03,  2.4874e+00]], grad_fn=&lt;LeakyReluBackward1&gt;)</pre>
+<pre>tensor([[-1.0085e-02,  1.0810e+00, -9.7679e-03, -1.1307e-02,  4.4197e-01,
+          5.4999e-01, -4.2809e-03, -1.1828e-02],
+        [ 1.9041e+00, -1.1581e-02,  1.8792e+00,  7.7701e-01,  5.2448e-01,
+         -5.5533e-03,  1.6126e+00,  1.5220e+00],
+        [ 1.2326e+00, -1.6174e-03,  1.1446e+00,  1.6528e+00, -1.5239e-02,
+         -8.0476e-03,  3.3760e-02,  1.1949e+00],
+        [-2.9320e-02,  8.9202e-01,  9.6470e-01, -1.9520e-02, -2.7348e-03,
+          3.3712e+00,  6.0935e-01,  5.4437e-01],
+        [ 8.0375e-01, -6.5314e-03, -3.0117e-02,  6.5286e-01,  8.3092e-01,
+         -2.5611e-02, -1.8277e-02, -2.0785e-02]], grad_fn=&lt;LeakyReluBackward1&gt;)</pre>
 </div>
 
 </div>
@@ -1467,7 +1475,8 @@ deephead</code></pre>
 
 <div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h3 id="5.3.-DeepText">5.3. <code>DeepText</code><a class="anchor-link" href="#5.3.-DeepText"> </a></h3><p>The <code>DeepText</code> class within the <code>WideDeep</code> package is a standard and simple stack of LSTMs on top of word embeddings. You could also add a FC-Head on top of the LSTMs. The word embeddings can be pre-trained. In the future I aim to include full pre-trained models (maybe bringing the <a href="https://github.com/huggingface">huggingface</a> library, <a href="https://arxiv.org/abs/1801.06146">ULMFiT</a> or <a href="https://arxiv.org/abs/1911.11423">SHA-RNN</a>) so that the combination between text and images is "fair".</p>
+<h3 id="5.3.-DeepText">5.3. <code>DeepText</code><a class="anchor-link" href="#5.3.-DeepText"> </a></h3><p>The <code>DeepText</code> class within the <code>WideDeep</code> package is a standard and simple stack of LSTMs on top of word embeddings. You could also add a FC-Head on top of the LSTMs. The word embeddings can be pre-trained.</p>
+<p>In the future I aim to include full pre-trained models (maybe bringing the <a href="https://github.com/huggingface">huggingface</a> library, <a href="https://arxiv.org/abs/1801.06146">ULMFiT</a> [5] or <a href="https://arxiv.org/abs/1911.11423">SHA-RNN</a>) [4] so that the combination between text and images is "fair" (since for the image model one can choose full pre-trained models, as we will see in the next sub-section).</p>
 <p>On the other hand, while I recommend using the <code>Wide</code> and <code>DeepDense</code> classes within <code>pytorch-widedeep</code> when building the corresponding model components, it is very likely that the user will want to use custom text and image models. That is perfectly possible. Simply, build them and pass them as the corresponding parameters. Note that the custom models <strong>MUST</strong> return a last layer of activations (i.e. not the final prediction) so that these activations are collected by <code>WideDeep</code> and combined accordingly. In addition, the models <strong>MUST</strong> also contain an attribute <code>output_dim</code> with the size of these last layers of activations.</p>
 <p>I will illustrate all of the above more in detail in the second post of these series.</p>
 <p>Let's have a look to <code>DeepText</code></p>
@@ -1553,11 +1562,11 @@ deephead</code></pre>
 
 
 <div class="output_text output_subarea output_execute_result">
-<pre>tensor([[ 0.2640, -0.0959,  0.1475, -0.3345],
-        [ 0.2475, -0.2401, -0.0616, -0.2565],
-        [ 0.2495, -0.0659,  0.0581, -0.3021],
-        [ 0.2640, -0.0959,  0.1475, -0.3345],
-        [ 0.2366, -0.0954,  0.0820, -0.2843]], grad_fn=&lt;SelectBackward&gt;)</pre>
+<pre>tensor([[ 0.3217,  0.0459,  0.2314,  0.2049],
+        [ 0.0146,  0.0818, -0.3678,  0.2232],
+        [-0.0175,  0.1433, -0.3312,  0.2409],
+        [ 0.0154,  0.1384, -0.3101,  0.2398],
+        [ 0.1574,  0.0884, -0.2047,  0.2322]], grad_fn=&lt;SelectBackward&gt;)</pre>
 </div>
 
 </div>
@@ -1659,11 +1668,11 @@ deephead</code></pre>
 
 
 <div class="output_text output_subarea output_execute_result">
-<pre>tensor([[ 0.0635, -0.0163, -0.1344, -0.0133],
-        [ 0.1258, -0.0337, -0.1043,  0.0016],
-        [ 0.0622, -0.2228,  0.2869, -0.0240],
-        [ 0.0953, -0.1360,  0.1782,  0.0140],
-        [-0.1278, -0.3161,  0.2760, -0.1063]], grad_fn=&lt;SelectBackward&gt;)</pre>
+<pre>tensor([[ 0.2332, -0.0000,  0.0000,  3.3695],
+        [-0.0000,  0.2724, -0.0000, -0.0000],
+        [ 0.0000, -0.0000, -1.1019, -0.0000],
+        [-0.0000,  0.0640, -0.0000, -0.7391],
+        [ 0.0000, -0.0000, -0.0000,  0.0000]], grad_fn=&lt;MulBackward0&gt;)</pre>
 </div>
 
 </div>
@@ -1778,8 +1787,8 @@ deephead</code></pre>
 
 
 <div class="output_text output_subarea output_execute_result">
-<pre>tensor([[-0.0002,  0.0899, -0.0004, -0.0009,  0.1232,  0.0338,  0.0357,  0.0239],
-        [-0.0002,  0.0909, -0.0004, -0.0009,  0.1224,  0.0345,  0.0358,  0.0231]],
+<pre>tensor([[ 0.2624, -0.0012,  0.1050, -0.0005, -0.0006,  0.1206, -0.0026,  0.0511],
+        [ 0.2639, -0.0012,  0.1068, -0.0005, -0.0006,  0.1228, -0.0026,  0.0504]],
        grad_fn=&lt;LeakyReluBackward1&gt;)</pre>
 </div>
 
@@ -1793,9 +1802,9 @@ deephead</code></pre>
 
 <div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h3 id="5.5.-deephead">5.5. <code>deephead</code><a class="anchor-link" href="#5.5.-deephead"> </a></h3><p>Note that I do not use uppercase here. This is because, by default, the <code>deephead</code> is not defined outside <code>WideDeep</code> as a class on its own, like the the rest of the components.</p>
+<h3 id="5.5.-deephead">5.5. <code>deephead</code><a class="anchor-link" href="#5.5.-deephead"> </a></h3><p>Note that I do not use uppercase here. This is because, by default, the <code>deephead</code> is not necessarily defined outside <code>WideDeep</code> as a class on its own, like the the rest of the components.</p>
 <p>When defining the <code>WideDeep</code> model there is a parameter called head_layers (and the corresponding <code>head_dropout</code>, and <code>head_batchnorm</code>) that define the FC-head on top of <code>DeeDense</code>, <code>DeepText</code> and <code>DeepImage</code>.</p>
-<p>Of course, you could also chose to define it yourself externally and pass it using the parameter <code>deephead</code>. Have a look</p>
+<p>Of course, you could also chose to define it yourself externally and pass it using the parameter <code>deephead</code>. Have a look at the <a href="https://pytorch-widedeep.readthedocs.io/en/latest/wide_deep.html">documentation</a>.</p>
 
 </div>
 </div>
@@ -1805,6 +1814,11 @@ deephead</code></pre>
 <h2 id="6.-Conclusion">6. Conclusion<a class="anchor-link" href="#6.-Conclusion"> </a></h2><p>This is the first of 2 posts introducing the python library <code>pytorch-widedeep</code>. This library is intended to be a flexible frame to combine tabular data with text and images via wide and deep models. Of course, it can also be used directly on "traditional" tabular data, without text and/or images, as we saw in Section 3.</p>
 <p>In this post I have shown how to quickly start using the library (Section 3) and explained the utilities available in the <code>preprocessing</code> module (Section 4) and and model component definitions (Section 5), available in the <code>models</code> module.</p>
 <p>In the next post I will show more advance uses that hopefully will illustrate <code>pytorch-widedeep</code>'s flexibility to build wide and deep models.</p>
+<h4 id="References">References<a class="anchor-link" href="#References"> </a></h4><p>[1] Wide &amp; Deep Learning for Recommender Systems. Heng-Tze Cheng, Levent Koc, Jeremiah Harmsen, et al. 2016.    <a href="https://arxiv.org/abs/1606.07792">arXiv:1606.07792</a></p>
+<p>[2] TabNet: Attentive Interpretable Tabular Learning. Sercan O. Arik, Tomas Pfister, 2020. <a href="https://arxiv.org/abs/1908.07442">arXiv:1908.07442</a></p>
+<p>[3] AutoGluon-Tabular: Robust and Accurate AutoML for Structured Data Nick Erickson, Jonas Mueller, Alexander Shirkov, et al., 2020. <a href="https://arxiv.org/abs/2003.06505">arXiv:2003.06505</a></p>
+<p>[4] Universal Language Model Fine-tuning for Text Classification. Jeremy Howard, Sebastian Ruder, 2018 <a href="https://arxiv.org/abs/1801.06146">arXiv:1801.06146v5</a></p>
+<p>[5] Single Headed Attention RNN: Stop Thinking With Your Head. Stephen Merity, 2019 <a href="arXiv:1911.11423v2">arXiv:1801.06146v5</a></p>
 
 </div>
 </div>
