@@ -28,6 +28,14 @@ layout: notebook
 
 <div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
+<p>This is the second of the two posts introducing <a href="https://github.com/jrzaurin/pytorch-widedeep">pytorch-widedeep</a>, a flexible package to combine tabular data with text and images.</p>
+<p>In the first post I described <code>pytorch-widedeep</code>'s data preprocessing utilities, the main components of a <code>WideDeep</code> model and a quick example to illustrate the basic use of the library. In this post I will use a series of example to dig deeper into the many options <code>pytorch-widedeep</code> offers as we build wide and deep models.</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
 <h2 id="1.-Binary-classification-with-varying-parameters">1. Binary classification with varying parameters<a class="anchor-link" href="#1.-Binary-classification-with-varying-parameters"> </a></h2><p>Let's start by using again the <a href="http://archive.ics.uci.edu/ml/datasets/Adult">adult census</a> dataset.</p>
 <p>Before moving any further, let me emphasize that, as we go through the examples, one should not pay excessive (or any) attention to the loss or the metrics in the sense that the input parameters are not selected to obtain "state of the art", but to illustrate usability.</p>
 <p>A proper benchmarking exercise will be carried out in a future post. Having said that, and without further ado, let's start.</p>
