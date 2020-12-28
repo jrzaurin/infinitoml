@@ -345,10 +345,10 @@ layout: notebook
     (0): DeepDense(
       (embed_layers): ModuleDict(
         (emb_layer_education): Embedding(17, 16)
-        (emb_layer_native_country): Embedding(43, 16)
-        (emb_layer_occupation): Embedding(16, 16)
         (emb_layer_relationship): Embedding(7, 8)
         (emb_layer_workclass): Embedding(10, 16)
+        (emb_layer_occupation): Embedding(16, 16)
+        (emb_layer_native_country): Embedding(43, 16)
       )
       (embed_dropout): Dropout(p=0.0, inplace=False)
       (dense): Sequential(
@@ -608,7 +608,83 @@ layout: notebook
 
 <div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h2 id="2.-Regression-combining-tabular,-text-and-images">2. Regression combining tabular, text and images<a class="anchor-link" href="#2.-Regression-combining-tabular,-text-and-images"> </a></h2><p>For this example we will use a small sample (so you can run it locally in a laptop) of the <a href="http://insideairbnb.com/get-the-data.html">Airbnb listings dataset</a> in London.</p>
+<h2 id="2.-Using-the-Focal-Loss">2. Using the Focal Loss<a class="anchor-link" href="#2.-Using-the-Focal-Loss"> </a></h2><p>The Focal loss (hereafter FL) was introduced by Tsung-Yi Lin et al., in their <a href="https://arxiv.org/pdf/1708.02002.pdf">2018 paper</a> “Focal Loss for Dense Object Detection” [1]. It is designed to address scenarios with extreme imbalanced classes, such as one-stage object detection where the imbalance between foreground and background classes can be, for example, 1:1000.</p>
+<p>The adult census dataset is not really imbalanced, therefore is not the best dataset to test the performance of the FL. Nonetheless, let me illustrate how easy is to "switch" from the binary cross entropy or cross entropy (defaults for binary and multiclass classification problems respectively) to the FL.</p>
+<p>To use the FL with <code>pytorch-widedeep</code> simply:</p>
+
+</div>
+</div>
+</div>
+    {% raw %}
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="n">WideDeep</span><span class="p">(</span><span class="n">wide</span><span class="o">=</span><span class="n">wide</span><span class="p">,</span> <span class="n">deepdense</span><span class="o">=</span><span class="n">deepdense</span><span class="p">)</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+</div>
+    {% endraw %}
+
+    {% raw %}
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">model</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s1">&#39;binary&#39;</span><span class="p">,</span> <span class="n">optimizers</span><span class="o">=</span><span class="n">optimizers</span><span class="p">,</span> <span class="n">lr_schedulers</span><span class="o">=</span><span class="n">schedulers</span><span class="p">,</span> 
+              <span class="n">initializers</span><span class="o">=</span><span class="n">initializers</span><span class="p">,</span>
+              <span class="n">callbacks</span><span class="o">=</span><span class="n">callbacks</span><span class="p">,</span>
+              <span class="n">metrics</span><span class="o">=</span><span class="n">metrics</span><span class="p">,</span>
+              <span class="n">with_focal_loss</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+              <span class="n">alpha</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="c1"># the alpha parameter of the focal loss</span>
+              <span class="n">gamma</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="c1"># the gamma parameter of the focal loss</span>
+              <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+</div>
+    {% endraw %}
+
+    {% raw %}
+    
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_wide</span><span class="o">=</span><span class="n">X_wide</span><span class="p">,</span> <span class="n">X_deep</span><span class="o">=</span><span class="n">X_deep</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="n">target</span><span class="p">,</span> <span class="n">n_epochs</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span> <span class="n">val_split</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>
+</pre></div>
+
+    </div>
+</div>
+</div>
+
+</div>
+    {% endraw %}
+
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Let me emphasize that the same syntax is used in a multiclass problem, i.e.:</p>
+<div class="highlight"><pre><span></span><span class="n">model</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s1">&#39;multiclass&#39;</span><span class="p">,</span> <span class="o">...</span><span class="p">,</span> <span class="n">with_focal_loss</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<h2 id="3.-Regression-combining-tabular,-text-and-images">3. Regression combining tabular, text and images<a class="anchor-link" href="#3.-Regression-combining-tabular,-text-and-images"> </a></h2><p>For this example we will use a small sample (so you can run it locally in a laptop) of the <a href="http://insideairbnb.com/get-the-data.html">Airbnb listings dataset</a> in London.</p>
 <p>In case you are interested in all details, I did prepared the original dataset for this post, and all the code can be found at the <code>airbnb_data_preprocessing.py</code>, <a href="`https://github.com/jrzaurin/pytorch-widedeep/blob/master/examples/airbnb_data_preprocessing.py`">here</a>. After such preprocessing the data looks like this:</p>
 
 </div>
@@ -1315,7 +1391,7 @@ Reading Images from data/airbnb/property_picture
 </li>
 <li><p><code>deepimage</code>: a pre-trained ResNet 18 model where only the last <code>Sequential</code> block (7) will be trained. The rest will remain "frozen". on top of it we have <code>imagehead</code> which is just a <code>Sequential</code> model comprised of two dense layers with the following sizes [512 $\rightarrow$ 256 $\rightarrow$ 128]</p>
 </li>
-<li><p><code>deephead</code>: on top of the 3 deep components we have a final component referred as <code>deephead</code> (this would correspond to the <code>architecture 2</code> described in the first post). This component will receive the concatenated output from all the deep components, and pass it through a further collection of dense layers. In this case the sizes are [256 $\rightarrow$ 64 $\rightarrow$ 1]. We input 256 because the output dim from <code>deepdense</code> is 64, the  output dim from <code>deeptext</code> is 64 and the output dim from <code>deeptext</code> is 128. The final <code>deephead</code> output dim is 1 because we are performing a regression, i.e. one output neuron with no activation function.</p>
+<li><p><code>deephead</code>: on top of the 3 deep components we have a final component referred as <code>deephead</code> (this would correspond to the <code>architecture 2</code> described in the first post). This component will receive the concatenated output from all the deep components, and pass it through a further collection of dense layers. In this case the sizes are [256 $\rightarrow$ 64 $\rightarrow$ 1]. We input 256 because the output dim from <code>deepdense</code> is 64, the  output dim from <code>deeptext</code> is 64 and the output dim from <code>deepimage</code> is 128. The final <code>deephead</code> output dim is 1 because we are performing a regression, i.e. one output neuron with no activation function.</p>
 </li>
 </ol>
 <p>Let's go even a step further and use different optimizers, initializers and schedulers for different components. Moreover, let's use a different learning rate for different parameter groups in the case of the <code>deepdense</code>, remember, this is <em>Kaggle mode</em>.</p>
@@ -1443,23 +1519,23 @@ valid: 100%|██████████| 7/7 [00:15&lt;00:00,  2.26s/it, loss
 </div>
 <div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h2 id="3.-Warm-up-routines">3. Warm up routines<a class="anchor-link" href="#3.-Warm-up-routines"> </a></h2><p>When running <code>.fit</code>, we can choose to first "warm up" each model individually (similarly to fine-tunning if the model was pre-trained, but this is a general functionality, i.e. there is no need of a pre-trained model) before the joined training begins.</p>
+<h2 id="4.-Warm-up-routines">4. Warm up routines<a class="anchor-link" href="#4.-Warm-up-routines"> </a></h2><p>When running <code>.fit</code>, we can choose to first "warm up" each model individually (similarly to fine-tunning if the model was pre-trained, but this is a general functionality, i.e. there is no need of a pre-trained model) before the joined training begins.</p>
 <p><code>pytorch-widedeep</code> implements 3 different warming up routines:</p>
 <ol>
-<li><p>Warm up all trainable layers at once with a triangular one-cycle learning rate (referred as slanted triangular learning rates in <a href="https://arxiv.org/abs/1801.06146">Howard &amp; Ruder 2018</a> [1]). See <a href="https://github.com/jrzaurin/pytorch-widedeep/blob/master/examples/06_WarmUp_Model_Components.ipynb">here</a> for an example on this routine for a simpler <code>wide</code> + <code>deepdense</code> model.</p>
+<li><p>Warm up all trainable layers at once with a triangular one-cycle learning rate (referred as slanted triangular learning rates in <a href="https://arxiv.org/abs/1801.06146">Howard &amp; Ruder 2018</a> [2]). See <a href="https://github.com/jrzaurin/pytorch-widedeep/blob/master/examples/06_WarmUp_Model_Components.ipynb">here</a> for an example on this routine for a simpler <code>wide</code> + <code>deepdense</code> model.</p>
 </li>
-<li><p>Gradual warm up <em>inspired</em> by the work of <a href="https://arxiv.org/abs/1708.00524">Felbo et al., 2017</a> [2] for fine-tunning</p>
+<li><p>Gradual warm up <em>inspired</em> by the work of <a href="https://arxiv.org/abs/1708.00524">Felbo et al., 2017</a> [3] for fine-tunning</p>
 </li>
 <li><p>Gradual warm up <em>inspired</em> by the work of <a href="https://arxiv.org/abs/1801.06146">Howard &amp; Ruder 2018</a> for fine-tunning</p>
 </li>
 </ol>
 <p>Currently warming up is only supported without a fully connected <code>deephead</code>, i.e. if <code>deephead=None</code>. In addition, Felbo and Howard routines only applied to the <code>deeptext</code> and <code>deepimage</code> components. The <code>wide</code> and <code>deepdense</code> components can also be warmed up, but together, following the first of the 3 routines described before.</p>
 <p>Let me briefly describe the "Felbo" and "Howard" routines before showing how to use them.</p>
-<h3 id="3.1-The-Felbo-warm-up-routine">3.1 The Felbo warm-up routine<a class="anchor-link" href="#3.1-The-Felbo-warm-up-routine"> </a></h3><p>The Felbo warm-up routine can be illustrated by the following figure:</p>
+<h3 id="4.1-The-Felbo-warm-up-routine">4.1 The Felbo warm-up routine<a class="anchor-link" href="#4.1-The-Felbo-warm-up-routine"> </a></h3><p>The Felbo warm-up routine can be illustrated by the following figure:</p>
 <p>{% include image.html alt="resnet_block" max-width="500" file="/infinitoml/images/copied_from_nb/figures/pytorch-widedeep/felbo_routine.png" %}</p>
 <p><strong>Figure 1</strong>. The process in the figure can be described as follows: warm up (or train) the last layer for one epoch using a one cycle triangular learning rate. Then warm up the next deeper layer for one epoch, with a learning rate that is a factor of 2.5 lower than the previous learning rate (the 2.5 factor is fixed) while freezing the already warmed up layer(s). Repeat untill all individual layers are warmed. Then warm one last epoch with all warmed layers trainable. The vanishing color gradient in the figure attempts to illustrate the decreasing learning rate.</p>
 <p>Note that this is not identical to the Fine-Tunning routine described in Felbo et al, 2017, this is why I used the word '<em>inspired</em>' before.</p>
-<h3 id="3.1-The-Howard-warm-up-routine">3.1 The Howard warm-up routine<a class="anchor-link" href="#3.1-The-Howard-warm-up-routine"> </a></h3><p>The Howard routine can be illustrated by the following figure:</p>
+<h3 id="4.2-The-Howard-warm-up-routine">4.2 The Howard warm-up routine<a class="anchor-link" href="#4.2-The-Howard-warm-up-routine"> </a></h3><p>The Howard routine can be illustrated by the following figure:</p>
 <p>{% include image.html alt="resnet_block" max-width="500" file="/infinitoml/images/copied_from_nb/figures/pytorch-widedeep/howard_routine.png" %}</p>
 <p><strong>Figure 2</strong>. The process in the figure can be described as follows: warm up (or train) the last layer for one epoch using a one cycle triangular learning rate. Then warm up the next deeper layer for one epoch, with a learning rate that is a factor of 2.5 lower than the previous learning rate (the 2.5 factor is fixed) while keeping the already warmed up layer(s) trainable. Repeat. The vanishing color gradient in the figure attempts to illustrate the decreasing learning rate.</p>
 <p>Note that I write "<em>warm up (or train) the last layer for one epoch [...]</em>". However, in practice the user will have to specify the order of the layers to be warmed up. This is another reason why I wrote that the warm up routines I have implemented are inspired by the work of Felbo and Howard and not identical to their implemenations.</p>
@@ -1731,7 +1807,7 @@ valid: 100%|██████████| 7/7 [00:16&lt;00:00,  2.43s/it, loss
 
 <div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h2 id="4.-Custom-model">4. Custom model<a class="anchor-link" href="#4.-Custom-model"> </a></h2><p>So far we have used the components that come with <code>pytorch-widedee</code>. However, as I mentioned in the first post, it is very likely that the user wants to use custom models for the <code>deeptext</code> and <code>deepimage</code> components. This is easily attainable by...well...simply passing your own model.</p>
+<h2 id="5.-Custom-model">5. Custom model<a class="anchor-link" href="#5.-Custom-model"> </a></h2><p>So far we have used the components that come with <code>pytorch-widedee</code>. However, as I mentioned in the first post, it is very likely that the user wants to use custom models for the <code>deeptext</code> and <code>deepimage</code> components. This is easily attainable by...well...simply passing your own model.</p>
 <p>You should just remember that the model must return the last layer of activations (and NOT the predictions) and must contained an attribute called <code>output_dim</code> with the output dimension of  that last layer.</p>
 <p>For example, let's say we want to use as <code>deeptext</code> a <strong>very</strong> simple stack of 2 bidirectional GRUs.</p>
 
@@ -1935,14 +2011,15 @@ valid: 100%|██████████| 7/7 [00:00&lt;00:00, 21.47it/s, loss
 
 <div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h2 id="5.-Conclusion">5. Conclusion<a class="anchor-link" href="#5.-Conclusion"> </a></h2><p>In this second post I tried to illustrate in detail the different functionalities of the <code>pytorch-widedeep</code> package, and how these can be used to customize each of the four potential components of the <code>WideDeep</code> model that can be built with <code>pytorch-widedeep</code>. I have also describe the warm-up routines that can be used to "warm-up" each individual component before the joined training and finally, how custom models, "external" to <code>pytorch-widedeep</code> can be used in combination with the package.</p>
+<h2 id="6.-Conclusion">6. Conclusion<a class="anchor-link" href="#6.-Conclusion"> </a></h2><p>In this second post I tried to illustrate in detail the different functionalities of the <code>pytorch-widedeep</code> package, and how these can be used to customize each of the four potential components of the <code>WideDeep</code> model that can be built with <code>pytorch-widedeep</code>. I have also describe the warm-up routines that can be used to "warm-up" each individual component before the joined training and finally, how custom models, "external" to <code>pytorch-widedeep</code> can be used in combination with the package.</p>
 <p>However, this is not the end of the journey. As you will have seen, there is an "<em>imbalance in the <code>pytorch-widedeep</code> force</em>", in the sense that while fully pre-trained models are incorporated for the <code>deepimage</code> component, this is not the case for the <code>deeptext</code> component, where only pre-trained word embeddings are considered. Of course, as illusttrated in Section 4, you could build your own pre-trained <code>deeptext</code> component and pass it to the <code>WideDeep</code> constructor class, but eventually, I want to allow that option within the package.</p>
 <p>This means that eventually I will need to integrate the library with some of the pre-trained Language models available or simply code a custom version for <code>pytorch-widedeep</code>.</p>
 <p>One the other hand, if there is one Deep Learning for Tabular data implementation that is becoming more and more popular is <a href="">TabNet</a>. There is already a fantastic <a href="https://github.com/dreamquark-ai/tabnet"><code>Pytorch</code> implementation</a> which I highly recommend. I believe I could adapt that implementation to <code>pytorch-widedeep</code> and offer it as a deep component or on its own, like any other model component.</p>
 <p>I am pretty sure I will think of a few more things along the way.</p>
 <p>If you made it this far, thanks for reading! And if you use the package, let me know your thoughts!</p>
-<h4 id="References">References<a class="anchor-link" href="#References"> </a></h4><p>[1] Universal Language Model Fine-tuning for Text Classification. Jeremy Howard, Sebastian Ruder, 2018 <a href="https://arxiv.org/abs/1801.06146">arXiv:1801.06146v5</a></p>
-<p>[2] Using millions of emoji occurrences to learn any-domain representations for detecting sentiment, emotion and sarcasm. Bjarke Felbo, Alan Mislove, Anders Søgaard, et al., 2017. <a href="https://arxiv.org/abs/1708.00524">arXiv:1708.00524</a></p>
+<h4 id="References">References<a class="anchor-link" href="#References"> </a></h4><p>[1] Tsung-Yi Lin, Priya Goyal, Ross Girshick, et al., 2018: Focal Loss for Dense Object Detection. <a href="https://arxiv.org/pdf/1708.02002.pdf">arXiv:1708.02002v2</a></p>
+<p>[2] Universal Language Model Fine-tuning for Text Classification. Jeremy Howard, Sebastian Ruder, 2018 <a href="https://arxiv.org/abs/1801.06146">arXiv:1801.06146v5</a></p>
+<p>[3] Using millions of emoji occurrences to learn any-domain representations for detecting sentiment, emotion and sarcasm. Bjarke Felbo, Alan Mislove, Anders Søgaard, et al., 2017. <a href="https://arxiv.org/abs/1708.00524">arXiv:1708.00524</a></p>
 
 </div>
 </div>
