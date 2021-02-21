@@ -111,7 +111,7 @@ window.onload = wrap_img;
        • <span class="read-time" title="Estimated read time">
     
     
-      26 min read
+      28 min read
     
 </span></p>
 
@@ -160,9 +160,9 @@ window.onload = wrap_img;
 -->
 
 <div class="container" id="notebook-container">
-
+        
     
-
+    
 <div class="cell border-box-sizing code_cell rendered">
 
 </div>
@@ -173,7 +173,11 @@ window.onload = wrap_img;
 <div class="text_cell_render border-box-sizing rendered_html">
 <p>This is the third of a <a href="https://jrzaurin.github.io/infinitoml/">series</a> of posts introducing <a href="https://github.com/jrzaurin/pytorch-widedeep">pytorch-widedeep</a>, a flexible package to combine tabular data with text and images (that could also be used for "standard" tabular data alone).</p>
 <p>While writing this post I will assume that the reader is not familiar with the previous two <a href="https://jrzaurin.github.io/infinitoml/">posts</a>. Of course, reading them would help, but in order to understand the content of this post and then being able to use <code>pytorch-widedeep</code> on tabular data, is not a requirement.</p>
-<p>As I mentioned earlier, <code>pytorch-widedeep</code>'s main goal is to facilitate the combination of images and text with tabular data via wide and deep models. To that aim, <a href="https://pytorch-widedeep.readthedocs.io/en/latest/model_components.html">wide and deep models</a> can be built with up to four model components: <code>wide</code>, <code>deeptabular</code>, <code>deeptext</code> and <code>deepimage</code>, that will take care of the different types of input datasets ("standard" tabular, i.e. numerical and categorical features, text and images). This post focuses only on the so called <code>deeptabular</code> component, and the 3 different models available in this library that can be used to build that component. Nonetheless, and for completion, I will briefly describe the remaining components first.</p>
+<p>To start with, as always, just install the package:</p>
+<div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">pytorch</span><span class="o">-</span><span class="n">widedeep</span>
+</pre></div>
+<p>This will install <code>v0.4.8</code>, hopefully the last beta version (check the repo or this <a href="https://jrzaurin.github.io/infinitoml/2020/12/06/pytorch-widedeep.html">post</a> for a caveat in the installation if you are using Mac, python 3.8 or pytorch 1.7+). Code-wise I think this could be already <code>v1</code>, but before that I want to try it in a few more datasets and select good default values. In addition, I also intend to implement other algorithms, in particular <a href="https://arxiv.org/abs/1908.07442">TabNet</a> [1], for which a very nice <a href="https://github.com/dreamquark-ai/tabnet">implementation</a> already exists.</p>
+<p>Moving on, and as I mentioned earlier, <code>pytorch-widedeep</code>'s main goal is to facilitate the combination of images and text with tabular data via wide and deep models. To that aim, <a href="https://pytorch-widedeep.readthedocs.io/en/latest/model_components.html">wide and deep models</a> can be built with up to four model components: <code>wide</code>, <code>deeptabular</code>, <code>deeptext</code> and <code>deepimage</code>, that will take care of the different types of input datasets ("standard" tabular, i.e. numerical and categorical features, text and images). This post focuses only on the so-called <code>deeptabular</code> component, and the 3 different models available in this library that can be used to build that component. Nonetheless, and for completion, I will briefly describe the remaining components first.</p>
 <p>The <code>wide</code> component of a wide and deep model is simply a liner model, and in <code>pytorch-widedeep</code> such model can be created via the <code>Wide</code> class. In the case of the <code>deeptext</code> component, <code>pytorch-widedeep</code> offers one model, available via the <code>DeepText</code> class. <code>DeepText</code> builds a simple stack of LSTMs, i.e. a standard DL text classifier or regressor, with flexibility regarding the use of pre-trained word embeddings, of a Fully Connected Head (FC-Head), etc. For the <code>deepimage</code> component, <code>pytorch-widedeep</code> includes two alternatives: a pre-trained Resnet model or a "standard" stack of CNNs to be trained from scratch. The two are available via the <code>DeepImage</code> class which, as in the case of <code>DeepText</code>, offers some flexibility when building the architecture.</p>
 <p>To clarify the use of the term "<em>model</em>" and Wide and Deep "<em>model component</em>" (in case there is some confusion), let's have a look to the following code:</p>
 <div class="highlight"><pre><span></span><span class="n">wide_model</span> <span class="o">=</span> <span class="n">Wide</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
@@ -185,7 +189,7 @@ window.onload = wrap_img;
 
 <span class="o">...</span>
 </pre></div>
-<p>Simply, a wide and deep model has model components that are (of course) models themselves. Note that any of the four wide and deep model components can be a custom model by the user. In fact, while I recommend using the models available in <code>pytorch-widedeep</code> for the <code>wide</code> and <code>deeptabular</code> model components, it is very likely that users will want to use their own models for the <code>deeptext</code> and <code>deepimage</code>components. That is perfectly possible as long as the custom models have an attribute called <code>output_dim</code> with the size of the last layer of activations, so that <code>WideDeep</code> can be constructed. In addition, any of the four components can be used independently in isolation. For example, you might want to use just a <code>wide</code> component, which is simply a linear model. To that aim, simply:</p>
+<p>Simply, a wide and deep model has model components that are (of course) models themselves. Note that <strong>any</strong> of the four wide and deep model components can be a custom model by the user. In fact, while I recommend using the models available in <code>pytorch-widedeep</code> for the <code>wide</code> and <code>deeptabular</code> model components, it is very likely that users will want to use their own models for the <code>deeptext</code> and <code>deepimage</code>components. That is perfectly possible as long as the custom models have an attribute called <code>output_dim</code> with the size of the last layer of activations, so that <code>WideDeep</code> can be constructed (see this <a href="https://github.com/jrzaurin/pytorch-widedeep">example notebook</a> in the repo). In addition, any of the four components can be used independently in isolation. For example, you might want to use just a <code>wide</code> component, which is simply a linear model. To that aim, simply:</p>
 <div class="highlight"><pre><span></span><span class="n">wide_model</span> <span class="o">=</span> <span class="n">Wide</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
 
 <span class="c1"># this would not be a wide and deep model but just wide</span>
@@ -207,10 +211,10 @@ window.onload = wrap_img;
 <p><code>TabRenset</code>: This is similar to the previous model but the embeddings are passed through a series of ResNet blocks built with dense layers.</p>
 </li>
 <li>
-<p><code>TabTransformer</code>: Details on the TabTransformer can be found in: <a href="https://arxiv.org/pdf/2012.06678.pdf">TabTransformer: Tabular Data Modeling Using Contextual Embeddings</a>. Again, this is similar to the models before but the embeddings are passed through a series of Transformer (encoder) blocks.</p>
+<p><code>TabTransformer</code>: Details on the TabTransformer can be found in: <a href="https://arxiv.org/pdf/2012.06678.pdf">TabTransformer: Tabular Data Modeling Using Contextual Embeddings</a>. Again, this is similar to the models before but the embeddings are passed through a series of Transformer encoder blocks.</p>
 </li>
 </ul>
-<p>A lot has been (and is being) written about the use of DL for tabular data, and certainly each of these models would deserve a post by themselves (the <code>TabMlp</code> is a section in the great <a href="https://github.com/fastai/fastbook">fastai book</a> and the <code>TabTransformer</code> was presented in a scientific publication). Here, I will try to describe them with some detail and illustrate their use within <code>pytorch-widedeep</code>. A proper benchmark exercise will be carried out in a not-so-distant future.</p>
+<p>A lot has been (and is being) written about the use of DL for tabular data, and certainly each of these models would deserve a post themselves. Here, I will try to describe them with some detail and illustrate their use within <code>pytorch-widedeep</code>. A proper benchmark exercise will be carried out in a not-so-distant future.</p>
 <h3 id="1.1-TabMlp">
 <a class="anchor" href="#1.1-TabMlp" aria-hidden="true"><span class="octicon octicon-link"></span></a>1.1 <code>TabMlp</code><a class="anchor-link" href="#1.1-TabMlp"> </a>
 </h3>
@@ -224,13 +228,13 @@ window.onload = wrap_img;
 </p>
 <p><strong>Fig 1</strong>. The <code>TabMlp</code>: this is the simples architecture and is very similar to the tabular model available in the fantastic fastai library. In fact, the implementation of the dense layers of the MLP is mostly identical to that in that library.</p>
 <p>The dashed-border boxes indicate that these components are optional. For example, we could use <code>TabMlp</code> without categorical components, or without continuous components, if we wanted.</p>
-<p>Let's have a look and see how this model is used</p>
+<p>Let's have a look and see how this model is used with the well known <a href="http://archive.ics.uci.edu/ml/datasets/Adult">adult census dataset</a>. I assume you have downloaded the data and place it at <code>data/adult/adult.csv.zip</code>:</p>
 
 </div>
 </div>
 </div>
     
-
+    
 <div class="cell border-box-sizing code_cell rendered">
 <details class="description">
       <summary class="btn btn-sm" data-open="Hide Code" data-close="Show Code"></summary>
@@ -253,7 +257,7 @@ window.onload = wrap_img;
     <span class="k">if</span> <span class="n">adult</span><span class="p">[</span><span class="n">c</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span> <span class="o">==</span> <span class="s1">'O'</span><span class="p">:</span>
         <span class="n">adult</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="o">=</span> <span class="n">adult</span><span class="p">[</span><span class="n">c</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="s2">"unknown"</span> <span class="k">if</span> <span class="n">x</span> <span class="o">==</span> <span class="s2">"?"</span> <span class="k">else</span> <span class="n">x</span><span class="p">)</span>
         <span class="n">adult</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="o">=</span> <span class="n">adult</span><span class="p">[</span><span class="n">c</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
-<span class="n">adult_train</span><span class="p">,</span> <span class="n">adult_test</span> <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span><span class="n">adult</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">stratify</span><span class="o">=</span><span class="n">adult</span><span class="o">.</span><span class="n">income_label</span><span class="p">)</span>
+<span class="n">adult_train</span><span class="p">,</span> <span class="n">adult_test</span> <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span><span class="n">adult</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">stratify</span><span class="o">=</span><span class="n">adult</span><span class="o">.</span><span class="n">income_label</span><span class="p">)</span>        
 </pre></div>
 
     </div>
@@ -265,7 +269,7 @@ window.onload = wrap_img;
     
 
     
-
+    
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
 
@@ -425,7 +429,7 @@ window.onload = wrap_img;
     
 
     
-
+    
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
 
@@ -433,11 +437,11 @@ window.onload = wrap_img;
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="c1"># define the embedding and continuous columns, and target</span>
 <span class="n">embed_cols</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="p">(</span><span class="s1">'workclass'</span><span class="p">,</span> <span class="mi">6</span><span class="p">),</span>
-    <span class="p">(</span><span class="s1">'education'</span><span class="p">,</span> <span class="mi">8</span><span class="p">),</span>
-    <span class="p">(</span><span class="s1">'marital_status'</span><span class="p">,</span> <span class="mi">6</span><span class="p">),</span>
-    <span class="p">(</span><span class="s1">'occupation'</span><span class="p">,</span><span class="mi">8</span><span class="p">),</span>
-    <span class="p">(</span><span class="s1">'relationship'</span><span class="p">,</span> <span class="mi">6</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">'workclass'</span><span class="p">,</span> <span class="mi">6</span><span class="p">),</span> 
+    <span class="p">(</span><span class="s1">'education'</span><span class="p">,</span> <span class="mi">8</span><span class="p">),</span> 
+    <span class="p">(</span><span class="s1">'marital_status'</span><span class="p">,</span> <span class="mi">6</span><span class="p">),</span> 
+    <span class="p">(</span><span class="s1">'occupation'</span><span class="p">,</span><span class="mi">8</span><span class="p">),</span> 
+    <span class="p">(</span><span class="s1">'relationship'</span><span class="p">,</span> <span class="mi">6</span><span class="p">),</span> 
     <span class="p">(</span><span class="s1">'race'</span><span class="p">,</span> <span class="mi">6</span><span class="p">)]</span>
 <span class="n">cont_cols</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"age"</span><span class="p">,</span> <span class="s2">"hours_per_week"</span><span class="p">,</span> <span class="s2">"fnlwgt"</span><span class="p">,</span> <span class="s2">"educational_num"</span><span class="p">]</span>
 <span class="n">target</span> <span class="o">=</span> <span class="n">adult_train</span><span class="p">[</span><span class="s2">"income_label"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
@@ -451,7 +455,7 @@ window.onload = wrap_img;
     
 
     
-
+    
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
 
@@ -481,7 +485,7 @@ window.onload = wrap_img;
 </div>
 </div>
     
-
+    
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
 
@@ -492,7 +496,7 @@ window.onload = wrap_img;
 <span class="n">tabmlp</span> <span class="o">=</span> <span class="n">TabMlp</span><span class="p">(</span>
     <span class="n">mlp_hidden_dims</span><span class="o">=</span><span class="p">[</span><span class="mi">200</span><span class="p">,</span> <span class="mi">100</span><span class="p">],</span>
     <span class="n">column_idx</span><span class="o">=</span><span class="n">tab_preprocessor</span><span class="o">.</span><span class="n">column_idx</span><span class="p">,</span>
-    <span class="n">embed_input</span><span class="o">=</span><span class="n">tab_preprocessor</span><span class="o">.</span><span class="n">embeddings_input</span><span class="p">,</span>
+    <span class="n">embed_input</span><span class="o">=</span><span class="n">tab_preprocessor</span><span class="o">.</span><span class="n">embeddings_input</span><span class="p">,</span> 
     <span class="n">continuous_cols</span><span class="o">=</span><span class="n">cont_cols</span><span class="p">,</span>
     <span class="n">batchnorm_cont</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span>
@@ -529,7 +533,7 @@ window.onload = wrap_img;
 </div>
 </div>
     
-
+    
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
 
@@ -589,8 +593,8 @@ window.onload = wrap_img;
 <div class="cell border-box-sizing text_cell rendered">
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>As we can see, we have a series of columns that would be represented as embeddings. The embeddings from all these columns are concatenated, to form a tensor of dim <code>(bsz, 40)</code> where <code>bsz</code> is batch size. Then, the "<em>batchnormed</em>" continuous columns are also concatenated, resulting in a tensor of dim <code>(bsz, 44)</code>, that will be passed to the 2-layer MLP <code>(200 -&gt; 100)</code>.</p>
-<p>One important thing to mention, common to all model components, is that <code>pytorch-widedeep</code> models do not build the last connection, i.e. the connection with the output neuron or neurons depending whether this is a regression, binary or multi-class classification. Such connection is built by the <code>WideDeep</code> constructor class. This means that even if we wanted to use a single-component model, the model still needs to be built with the <code>WideDeep</code> class.</p>
+<p>As we can see, we have a series of columns that would be represented as embeddings. The embeddings from all these columns are concatenated, to form a tensor of dim <code>(bsz, 40)</code> where <code>bsz</code> is batch size. Then, the "<em>batchnormed</em>" continuous columns are also concatenated, resulting in a tensor of dim <code>(bsz, 44)</code>, that will be passed to the 2-layer MLP <code>(200 -&gt; 100)</code>. In summary <code>Embeddings</code> + continuous+ MLP.</p>
+<p>One important thing to mention, common to all models, is that <code>pytorch-widedeep</code> models do not build the last connection, i.e. the connection with the output neuron or neurons depending whether this is a regression, binary or multi-class classification. Such connection is built by the <code>WideDeep</code> constructor class. This means that even if we wanted to use a single-component model, the model still needs to be built with the <code>WideDeep</code> class.</p>
 <p>This is because the library is, a priori, intended to build <code>WideDeep</code> models (and hence its name). Once the model is built it is passed to the <code>Trainer</code> (as we will see now). The <code>Trainer</code> class is coded to receive a parent model of class <code>WideDeep</code> with children that are the model components. This is very convenient for a number of aspects in the library.</p>
 <p>Effectively this simply requires one extra line of code.</p>
 
@@ -598,7 +602,7 @@ window.onload = wrap_img;
 </div>
 </div>
     
-
+    
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
 
@@ -615,7 +619,7 @@ window.onload = wrap_img;
     
 
     
-
+    
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
 
@@ -687,7 +691,7 @@ window.onload = wrap_img;
 </div>
 </div>
     
-
+    
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
 
@@ -697,7 +701,7 @@ window.onload = wrap_img;
 <span class="kn">from</span> <span class="nn">pytorch_widedeep.metrics</span> <span class="kn">import</span> <span class="n">Accuracy</span>
 
 <span class="n">trainer</span> <span class="o">=</span> <span class="n">Trainer</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">objective</span><span class="o">=</span><span class="s2">"binary"</span><span class="p">,</span> <span class="n">metrics</span><span class="o">=</span><span class="p">[(</span><span class="n">Accuracy</span><span class="p">)])</span>
-<span class="n">trainer</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_tab</span><span class="o">=</span><span class="n">X_tab</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="n">target</span><span class="p">,</span> <span class="n">n_epochs</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span> <span class="n">val_split</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>
+<span class="n">trainer</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_tab</span><span class="o">=</span><span class="n">X_tab</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="n">target</span><span class="p">,</span> <span class="n">n_epochs</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span> <span class="n">val_split</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span> 
 </pre></div>
 
     </div>
@@ -710,14 +714,14 @@ window.onload = wrap_img;
 <div class="output_area">
 
 <div class="output_subarea output_stream output_stderr output_text">
-<pre>epoch 1: 100%|██████████| 123/123 [00:02&lt;00:00, 50.52it/s, loss=0.4, metrics={'acc': 0.8083}]
+<pre>epoch 1: 100%|██████████| 123/123 [00:02&lt;00:00, 50.52it/s, loss=0.4, metrics={'acc': 0.8083}]  
 valid: 100%|██████████| 31/31 [00:00&lt;00:00, 104.99it/s, loss=0.367, metrics={'acc': 0.811}]
 epoch 2: 100%|██████████| 123/123 [00:02&lt;00:00, 44.74it/s, loss=0.364, metrics={'acc': 0.8284}]
 valid: 100%|██████████| 31/31 [00:00&lt;00:00, 77.02it/s, loss=0.359, metrics={'acc': 0.8287}]
 epoch 3: 100%|██████████| 123/123 [00:02&lt;00:00, 48.33it/s, loss=0.357, metrics={'acc': 0.8312}]
 valid: 100%|██████████| 31/31 [00:00&lt;00:00, 82.78it/s, loss=0.355, metrics={'acc': 0.8315}]
 epoch 4: 100%|██████████| 123/123 [00:02&lt;00:00, 50.34it/s, loss=0.355, metrics={'acc': 0.8322}]
-valid: 100%|██████████| 31/31 [00:00&lt;00:00, 98.06it/s, loss=0.353, metrics={'acc': 0.8324}]
+valid: 100%|██████████| 31/31 [00:00&lt;00:00, 98.06it/s, loss=0.353, metrics={'acc': 0.8324}] 
 epoch 5: 100%|██████████| 123/123 [00:02&lt;00:00, 51.45it/s, loss=0.353, metrics={'acc': 0.8341}]
 valid: 100%|██████████| 31/31 [00:00&lt;00:00, 105.90it/s, loss=0.347, metrics={'acc': 0.8345}]
 </pre>
@@ -762,7 +766,7 @@ valid: 100%|██████████| 31/31 [00:00&lt;00:00, 105.90it/s, l
 </div>
 </div>
     
-
+    
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
 
@@ -772,7 +776,7 @@ valid: 100%|██████████| 31/31 [00:00&lt;00:00, 105.90it/s, l
 
 <span class="n">tabresnet</span> <span class="o">=</span> <span class="n">TabResnet</span><span class="p">(</span>
     <span class="n">column_idx</span><span class="o">=</span><span class="n">tab_preprocessor</span><span class="o">.</span><span class="n">column_idx</span><span class="p">,</span>
-    <span class="n">embed_input</span><span class="o">=</span><span class="n">tab_preprocessor</span><span class="o">.</span><span class="n">embeddings_input</span><span class="p">,</span>
+    <span class="n">embed_input</span><span class="o">=</span><span class="n">tab_preprocessor</span><span class="o">.</span><span class="n">embeddings_input</span><span class="p">,</span> 
     <span class="n">continuous_cols</span><span class="o">=</span><span class="n">cont_cols</span><span class="p">,</span>
     <span class="n">batchnorm_cont</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
     <span class="n">blocks_dims</span><span class="o">=</span><span class="p">[</span><span class="mi">200</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">100</span><span class="p">],</span>
@@ -873,21 +877,21 @@ valid: 100%|██████████| 31/31 [00:00&lt;00:00, 105.90it/s, l
 <div class="cell border-box-sizing text_cell rendered">
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>As we did previously with the <code>TabMlp</code>, let's "walk through" the model. As we can see, the object <code>model</code> is an instance of a <code>WideDeep</code> model formed by a single component, <code>deeptabular</code> that is a <code>TabResnet</code> model. The <code>TabResnet</code> model is formed by a series of embeddings that are concatenated themselves, and then further concatenated with the normalised continuous columns. The resulting tensor of dim <code>(bsz, 44)</code> is then passed through a <code>tab_resnet</code> component, which is comprised by two so-called "dense" Resnet blocks. The output of the Resnet blocks, of dim <code>(bsz, 100)</code> is passed through a 2-layer MLP, named <code>tab_resnet_mlp</code> and finally "plugged" into the output neuron. In summary: <code>Embedding</code> + <code>DenseResnet</code> + <code>MLP</code>.</p>
+<p>As we did previously with the <code>TabMlp</code>, let's "walk through" the model. As we can see, the object <code>model</code> is an instance of a <code>WideDeep</code> model formed by a single component, <code>deeptabular</code> that is a <code>TabResnet</code> model and an MLP named <code>tab_resnet_mlp</code>. The <code>TabResnet</code> model is formed by a series of embeddings that are concatenated themselves, and then further concatenated with the normalised continuous columns. The resulting tensor of dim <code>(bsz, 44)</code> is then passed through a <code>tab_resnet</code> component, which is comprised by two so-called "dense" Resnet blocks. The output of one Resnet block is the input of the next. Therefore, when setting <code>blocks_dim = [200, 100, 100]</code> we are generating two blocks with input/output 200/100 and 100/100 respectively. The output of the second Resnet blocks, of dim <code>(bsz, 100)</code> is passed through a 2-layer MLP, named <code>tab_resnet_mlp</code> and finally "plugged" into the output neuron. In summary: <code>Embedding</code> + continuous + <code>DenseResnet</code> + <code>MLP</code>.</p>
 <p>To run it, the code is, as one might expect identical to the one shown before for the <code>TabMlp</code>.</p>
 
 </div>
 </div>
 </div>
     
-
+    
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
 
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">trainer</span> <span class="o">=</span> <span class="n">Trainer</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">objective</span><span class="o">=</span><span class="s2">"binary"</span><span class="p">,</span> <span class="n">metrics</span><span class="o">=</span><span class="p">[(</span><span class="n">Accuracy</span><span class="p">)])</span>
-<span class="n">trainer</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_tab</span><span class="o">=</span><span class="n">X_tab</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="n">target</span><span class="p">,</span> <span class="n">n_epochs</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span> <span class="n">val_split</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>
+<span class="n">trainer</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_tab</span><span class="o">=</span><span class="n">X_tab</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="n">target</span><span class="p">,</span> <span class="n">n_epochs</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span> <span class="n">val_split</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span> 
 </pre></div>
 
     </div>
@@ -901,15 +905,15 @@ valid: 100%|██████████| 31/31 [00:00&lt;00:00, 105.90it/s, l
 
 <div class="output_subarea output_stream output_stderr output_text">
 <pre>epoch 1: 100%|██████████| 123/123 [00:04&lt;00:00, 24.67it/s, loss=0.379, metrics={'acc': 0.8187}]
-valid: 100%|██████████| 31/31 [00:00&lt;00:00, 91.58it/s, loss=0.354, metrics={'acc': 0.8218}]
+valid: 100%|██████████| 31/31 [00:00&lt;00:00, 91.58it/s, loss=0.354, metrics={'acc': 0.8218}] 
 epoch 2: 100%|██████████| 123/123 [00:05&lt;00:00, 22.76it/s, loss=0.356, metrics={'acc': 0.8337}]
 valid: 100%|██████████| 31/31 [00:00&lt;00:00, 62.59it/s, loss=0.352, metrics={'acc': 0.8341}]
 epoch 3: 100%|██████████| 123/123 [00:05&lt;00:00, 22.53it/s, loss=0.351, metrics={'acc': 0.8351}]
-valid: 100%|██████████| 31/31 [00:00&lt;00:00, 98.51it/s, loss=0.351, metrics={'acc': 0.8354}]
+valid: 100%|██████████| 31/31 [00:00&lt;00:00, 98.51it/s, loss=0.351, metrics={'acc': 0.8354}] 
 epoch 4: 100%|██████████| 123/123 [00:03&lt;00:00, 31.24it/s, loss=0.349, metrics={'acc': 0.8354}]
 valid: 100%|██████████| 31/31 [00:00&lt;00:00, 101.44it/s, loss=0.348, metrics={'acc': 0.836}]
 epoch 5: 100%|██████████| 123/123 [00:04&lt;00:00, 30.44it/s, loss=0.346, metrics={'acc': 0.8363}]
-valid: 100%|██████████| 31/31 [00:00&lt;00:00, 94.39it/s, loss=0.345, metrics={'acc': 0.8371}]
+valid: 100%|██████████| 31/31 [00:00&lt;00:00, 94.39it/s, loss=0.345, metrics={'acc': 0.8371}] 
 </pre>
 </div>
 </div>
@@ -927,7 +931,7 @@ valid: 100%|██████████| 31/31 [00:00&lt;00:00, 94.39it/s, lo
 <h3 id=" 1.3-TabTransformer">
 <a class="anchor" href="#%C2%A01.3-TabTransformer" aria-hidden="true"><span class="octicon octicon-link"></span></a> 1.3 <code>TabTransformer</code><a class="anchor-link" href="#%C2%A01.3-TabTransformer"> </a>
 </h3>
-<p>The <code>TabTransformer</code> is described in detail in <a href="https://arxiv.org/pdf/2012.06678.pdf">TabTransformer: Tabular Data Modeling Using Contextual Embeddings</a> [1], by the clever guys at Amazon. Is an entertaining paper that I, of course, strongly recommend if you are going to use this model on your tabular data (and also in general if you are interested in DL for tabular data).</p>
+<p>The <code>TabTransformer</code> is described in detail in <a href="https://arxiv.org/pdf/2012.06678.pdf">TabTransformer: Tabular Data Modeling Using Contextual Embeddings</a> [2], by the clever guys at Amazon. Is an entertaining paper that I, of course, strongly recommend if you are going to use this model on your tabular data (and also in general if you are interested in DL for tabular data).</p>
 <p>My implementation is not the only one available. Given that the model was conceived by the researchers at Amazon, it is also available in their fantastic <code>autogluon</code> library (which you should definitely check). In addition, you can find another implementation <a href="https://github.com/lucidrains/tab-transformer-pytorch">here</a> by Phil Wang, whose entire github is simply outstanding. My implementation is partially inspired by these but has some particularities and adaptations so that it works within the <code>pytorch-widedeep</code> package.</p>
 <p>The following figure illustrates the <code>TabTransformer</code> model architecture.</p>
 <p><figure>
@@ -937,9 +941,9 @@ valid: 100%|██████████| 31/31 [00:00&lt;00:00, 94.39it/s, lo
     
 </figure>
 </p>
-<p><strong>Fig 4</strong>. The <code>TabTransfomer</code>, described in [TabTransformer: Tabular Data Modeling Using Contextual Embeddings]. (<a href="https://arxiv.org/pdf/2012.06678.pdf">https://arxiv.org/pdf/2012.06678.pdf</a>). The dashed-border boxes indicate that the component is optional.</p>
+<p><strong>Fig 4</strong>. The <code>TabTransfomer</code>, described in <a href="https://arxiv.org/pdf/2012.06678.pdf">TabTransformer: Tabular Data Modeling Using Contextual Embeddings</a>. The dashed-border boxes indicate that the component is optional.</p>
 <p>As in previous cases, there are a number of variants and details to consider as one builds the model. I will describe some here, but for a full view of all the possible parameters, please, have a look to the <a href="https://pytorch-widedeep.readthedocs.io/en/latest/model_components.html#pytorch_widedeep.models.tab_transformer.TabTransformer">docs</a>.</p>
-<p>I don't want to go into the details of what is a Transformer [2] in this post. There is an overwhelming amount of literature if you wanted to learn about it, with the most popular being perhaps <a href="https://nlp.seas.harvard.edu/2018/04/03/attention.html">The Annotated Transformer</a>. Also check <a href="https://elvissaravia.substack.com/p/learn-about-transformers-a-recipe">this</a> post and if you are a math "maniac" you might like this <a href="https://arxiv.org/abs/2007.02876">paper</a> [3]. However, let me just briefly describe it so I can introduce the little math we will need for this post. In one sentence, a Transformer consists of a multi-head self-attention layer followed by feed-forward layer, with element-wise addition and layer-normalization being done after each layer.</p>
+<p>I don't want to go into the details of what is a Transformer [3] in this post. There is an overwhelming amount of literature if you wanted to learn about it, with the most popular being perhaps <a href="https://nlp.seas.harvard.edu/2018/04/03/attention.html">The Annotated Transformer</a>. Also check this <a href="https://elvissaravia.substack.com/p/learn-about-transformers-a-recipe">post</a> and if you are a math "maniac" you might like this <a href="https://arxiv.org/abs/2007.02876">paper</a> [4]. However, let me just briefly describe it here so I can introduce the little math we will need for this post. In one sentence, a Transformer consists of a multi-head self-attention layer followed by feed-forward layer, with element-wise addition and layer-normalization being done after each layer.</p>
 <p>As most of you will know, a self-attention layer comprises three matrices, Key, Query and Value. Each input categorical column, i.e. embedding, is projected onto these matrices (although see the <code>fixed_attention</code> option later in the post) to generate their corresponding key, query and value vectors. Formally, let $K \in R^{e \times d}$, $Q \in R^{e \times d}$ and $V \in R^{e \times d}$ be the Key, Query and Value matrices of the embeddings where $e$ is the embeddings dimension and $d$ is the dimension of all the Key, Query and Value matrices. Then every input categorical column, i.e embedding, attends to all other categorical columns through an attention head:</p>
 $$
 Attention(K, Q, V ) = A \cdot V, \hspace{5cm}(1)
@@ -964,38 +968,26 @@ $$<p>And that is all the math we need.</p>
 <p>when building a <code>TabTransformer</code> model, it is possible for all the embeddings that represent a categorical column to share a fraction of their embeddings, or define a common separated embedding per column that will be added to the column's embeddings.</p>
 <p>The idea behind this so-called "<em>column embedding</em>" is to enable the model to distinguish the classes in one column from those in the other columns. In other words, we want the model to learn representations not only of the different categorical values in the column, but also of the column itself. This is attained by the <code>shared_embed</code> group of parameters: <code>share_embed : bool</code>, <code>add_shared_embed: bool</code> and <code>frac_shared_embed: int</code>. The first simply indicates if embeddings will be shared, the second sets the sharing strategy and the third one the fraction of the embeddings that will be shared, depending on the strategy. They all relate to the class <code>SharedEmbeddings</code></p>
 <p>For example, let's say that we have a categorical column with 5 different categories that will be encoded as embeddings of dim 8. This will result in a lookup table for that column of dim <code>(5, 8)</code>. The two sharing strategies are illustrated in Fig 6.</p>
-<p><figure>
-  
-    <img class="docimage" src="/infinitoml/images/copied_from_nb/figures/pytorch-widedeep/shared_embeddings.png" alt="" style="max-width: 600px">
-    
-    
-</figure>
-</p>
-<!-- <p><img src="figures/pytorch-widedeep/shared_embeddings.png" width="600"/></p>
+<p><img src="/infinitoml/images/copied_from_nb/figures/pytorch-widedeep/shared_embeddings.png" alt="">
+<!-- <img src="figures/pytorch-widedeep/shared_embeddings.png" width="600"/>
  -->
-<p><strong>Fig 6</strong>. The two sharing embeddings strategies. Upper panel: the "<em>column embedding</em>" replaces <code>embedding dim / frac_shared_embed</code> (4 in this case) of the total embeddings that represent the different values of the categorical column. Lower panel: the "<em>column embedding</em>" is added (well, technically broadcasted and added) to the original embedding lookup table. Note that <code>n_cat</code> here refers to the number of different categories for this particular column.</p>
+<strong>Fig 6</strong>. The two sharing embeddings strategies. Upper panel: the "<em>column embedding</em>" replaces <code>embedding dim / frac_shared_embed</code> (4 in this case) of the total embeddings that represent the different values of the categorical column. Lower panel: the "<em>column embedding</em>" is added (well, technically broadcasted and added) to the original embedding lookup table. Note that <code>n_cat</code> here refers to the number of different categories for this particular column.</p>
 <p><strong><code>fixed_attention</code></strong></p>
-<p><code>fixed_attention</code>: this in inspired by the <a href="https://github.com/awslabs/autogluon/blob/master/tabular/src/autogluon/tabular/models/tab_transformer/modified_transformer.py">implementation</a> at the Autogluon library. When using "fixed attention", the key and query matrices are not the result of any projection of the input tensor $X$, but learnable matrices (referred as <code>fixed_key</code> and <code>fixed_query</code>) defined separately, as you instantiate the model. <code>fixed_attention</code> does not affect how the Value matrix is computed.</p>
+<p><code>fixed_attention</code>: this in inspired by the <a href="https://github.com/awslabs/autogluon/blob/master/tabular/src/autogluon/tabular/models/tab_transformer/modified_transformer.py">implementation</a> at the Autogluon library. When using "fixed attention", the key and query matrices are not the result of any projection of the input tensor $X$, but learnable matrices (referred as <code>fixed_key</code> and <code>fixed_query</code>) of dim <code>(number of categorical columns x embeddings dim)</code> defined separately, as you instantiate the model. <code>fixed_attention</code> does not affect how the Value matrix is computed.</p>
 <p>Let me go through an example with numbers to clarify things. Let's assume we have a dataset with 5 categorical columns that will be encoded by embeddings of dim 4 and we use a batch size (<code>bsz</code>) of 6. Figure 7 shows how the key matrix will be computed for a given batch (same applies to the query matrix) with and without fixed attention.</p>
-<p><figure>
-  
-    <img class="docimage" src="/infinitoml/images/copied_from_nb/figures/pytorch-widedeep/fixed_attn.png" alt="" style="max-width: 700px">
-    
-    
-</figure>
-</p>
-<!-- <p><img src="figures/pytorch-widedeep/fixed_attn.png" width="700"/></p>
- -->
- <p><strong>Fig 7</strong>. Key matrix computation for a given batch with and without fixed attention (same applies to the query matrix). The different color tones in the matrices are my attempt to illustrate that, while without fixed attention the key matrix can have different values anywhere in the matrix, with fixed attention the key matrix is the result of the repetition of the "fixed-key" <code>bsz</code> times. The input projected layer is, of course, broadcasted aong the <code>bsz</code> dimension in the upper panel.</p>
-<p>As I mentioned, this implementation is inspired by that at the Autogluon library. Since the guys at Amazon are the ones that came up with the <code>TabTransformer</code>, is only logical to think that they might have found a purpose for this implementation of attention, at least in some cases. However, at the time of writing such purpose is not 100% clear to me. It is known that, in problems like machine translation, most attention heads learn redundant patterns (see e.g. <a href="https://arxiv.org/abs/2002.10260">Alessandro Raganato et al., 2020</a> [4] and references therein). Therefore, maybe the fixed attention mechanism discussed here helps reducing redundancy for problems involving tabular data.</p>
-<p>Overall, the way I interpret it, in layman's terms, is the following: when using fixed attention, the Key and the Query matrices are defined as the model is instantiated, and do not know of the input until the attention weights (<code>attn_weights</code>) are multiplied by the value matrix to obtain what I refer as <code>attn_score</code> in figure 5. Those attention weights, which are in essence the result of a matrix multiplication between the key and the query matrices (plus softmax and normalization), are going to be the same for all the heads, for all samples in a given batch. Therefore, my interpretation is that when using fixed attention, we reduce the attention capabilities of the transformer, which will focus on less aspects of the inputs, reducing potential redundancies.</p>
+<p><img src="/infinitoml/images/copied_from_nb/figures/pytorch-widedeep/fixed_attn.png" alt="">
+<!--  <img src="figures/pytorch-widedeep/fixed_attn.png" width="700"/>
+     -->
+<strong>Fig 7</strong>. Key matrix computation for a given batch with and without fixed attention (same applies to the query matrix). The different color tones in the matrices are my attempt to illustrate that, while without fixed attention the key matrix can have different values anywhere in the matrix, with fixed attention the key matrix is the result of the repetition of the "fixed-key" <code>bsz</code> times. The project-layer is, of course, broadcasted along the <code>bsz</code> dimension in the upper panel.</p>
+<p>As I mentioned, this implementation is inspired by that at the Autogluon library. Since the guys at Amazon are the ones that came up with the <code>TabTransformer</code>, is only logical to think that they found a use for this implementation of attention. However, at the time of writing such use is not 100% clear to me. It is known that, in problems like machine translation, most attention heads learn redundant patterns (see e.g. <a href="https://arxiv.org/abs/2002.10260">Alessandro Raganato et al., 2020</a> [5] and references therein). Therefore, maybe the fixed attention mechanism discussed here helps reducing redundancy for problems involving tabular data.</p>
+<p>Overall, the way I interpret <code>fixed_attention</code> in layman's terms, is the following: when using fixed attention, the Key and the Query matrices are defined as the model is instantiated, and do not know of the input until the attention weights (<code>attn_weights</code>) are multiplied by the value matrix to obtain what I refer as <code>attn_score</code> in figure 5. Those attention weights, which are in essence the result of a matrix multiplication between the key and the query matrices (plus softmax and normalization), are going to be the same for all the heads, for all samples in a given batch. Therefore, my interpretation is that when using fixed attention, we reduce the attention capabilities of the transformer, which will focus on less aspects of the inputs, reducing potential redundancies.</p>
 <p>Anyway, enough speculation. Time to have a look to the code. Note that, since we are going to stack the embeddings (instead of concatenating them) they all must have the same dimensions. Such dimension is set as we build the model instead that at the pre-processing stage. To avoid input format conflicts we use the <code>for_tabtransformer</code> parameter at pre-processing time.</p>
 
 </div>
 </div>
 </div>
     
-
+    
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
 
@@ -1003,8 +995,8 @@ $$<p>And that is all the math we need.</p>
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">embed_cols</span> <span class="o">=</span> <span class="p">[</span><span class="s1">'workclass'</span><span class="p">,</span> <span class="s1">'education'</span><span class="p">,</span> <span class="s1">'marital_status'</span><span class="p">,</span> <span class="s1">'occupation'</span><span class="p">,</span> <span class="s1">'relationship'</span><span class="p">,</span> <span class="s1">'race'</span><span class="p">]</span>
 <span class="n">tab_preprocessor</span> <span class="o">=</span> <span class="n">TabPreprocessor</span><span class="p">(</span>
-    <span class="n">embed_cols</span><span class="o">=</span><span class="n">embed_cols</span><span class="p">,</span>
-    <span class="n">continuous_cols</span><span class="o">=</span><span class="n">cont_cols</span><span class="p">,</span>
+    <span class="n">embed_cols</span><span class="o">=</span><span class="n">embed_cols</span><span class="p">,</span> 
+    <span class="n">continuous_cols</span><span class="o">=</span><span class="n">cont_cols</span><span class="p">,</span> 
     <span class="n">for_tabtransformer</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
 <span class="n">X_tab</span> <span class="o">=</span> <span class="n">tab_preprocessor</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">adult_train</span><span class="p">)</span>
@@ -1033,7 +1025,7 @@ $$<p>And that is all the math we need.</p>
     
 
     
-
+    
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
 
@@ -1043,7 +1035,7 @@ $$<p>And that is all the math we need.</p>
 
 <span class="n">tabtransformer</span> <span class="o">=</span> <span class="n">TabTransformer</span><span class="p">(</span>
     <span class="n">column_idx</span><span class="o">=</span><span class="n">tab_preprocessor</span><span class="o">.</span><span class="n">column_idx</span><span class="p">,</span>
-    <span class="n">embed_input</span><span class="o">=</span><span class="n">tab_preprocessor</span><span class="o">.</span><span class="n">embeddings_input</span><span class="p">,</span>
+    <span class="n">embed_input</span><span class="o">=</span><span class="n">tab_preprocessor</span><span class="o">.</span><span class="n">embeddings_input</span><span class="p">,</span> 
     <span class="n">continuous_cols</span><span class="o">=</span><span class="n">cont_cols</span><span class="p">,</span>
     <span class="n">shared_embed</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
     <span class="n">num_blocks</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
@@ -1198,21 +1190,21 @@ $$<p>And that is all the math we need.</p>
 <div class="cell border-box-sizing text_cell rendered">
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>Let's walk through the model. Initially, and as always, we have the embeddings that will represent the categorical columns. The only particular aspect in this model is that the embeddings are of class <code>SharedEmbeddings</code>, which I described before. These embeddings are stacked and passed through three transformer blocks. The output for all the categorical columns is concatenated, resulting in a tensor of dim <code>(bsz, 192)</code> where 192 is equal to the number of categorical columns (6) times the embedding dim (32). This tensor is then concatenated with the "layernormed" continuous columns, resulting in a tensor of dim <code>(bsz, 196)</code>. As usual, this tensor goes through an MLP and "off we go".</p>
+<p>If you go to the original post and you have a look to the model architecture, you will see that, as always, model is an instance of a <code>WideDeep</code> object formed by a single component, <code>deeptabular</code> that is <code>TabTransformermodel</code> and an MLP, named <code>tab_transformer_nlp</code> . <code>TabTranformer</code> is formed by a series of embeddings with the only particular aspect being that the embeddings are of class <code>SharedEmbeddings</code>, which I described before. These embeddings are stacked and passed through three transformer blocks. The output for all the categorical columns is concatenated, resulting in a tensor of dim <code>(bsz, 192)</code> where 192 is equal to the number of categorical columns (6) times the embedding dim (32). This tensor is then concatenated with the "layernormed" continuous columns, resulting in a tensor of dim <code>(bsz, 196)</code>. As usual, this tensor goes through <code>tab_transformer_mlp</code> , which following the guidance in the paper ("<em>The MLP layer sizes are set to {4 × l, 2 × l}, where l is the size of its input.</em>") is <code>[784 -&gt; 392]</code>, and "off we go". In summary <code>SharedEmbeddings</code> + continuous + <code>TransformerEncoder</code> + MLP.</p>
 <p>To run it, the code is, as one might expect identical to the one shown before for the <code>TabMlp</code> and <code>TabRenset</code>.</p>
 
 </div>
 </div>
 </div>
     
-
+    
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
 
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="n">trainer</span> <span class="o">=</span> <span class="n">Trainer</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">objective</span><span class="o">=</span><span class="s2">"binary"</span><span class="p">,</span> <span class="n">metrics</span><span class="o">=</span><span class="p">[(</span><span class="n">Accuracy</span><span class="p">)])</span>
-<span class="n">trainer</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_tab</span><span class="o">=</span><span class="n">X_tab</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="n">target</span><span class="p">,</span> <span class="n">n_epochs</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span> <span class="n">val_split</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>
+<span class="n">trainer</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_tab</span><span class="o">=</span><span class="n">X_tab</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="n">target</span><span class="p">,</span> <span class="n">n_epochs</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">256</span><span class="p">,</span> <span class="n">val_split</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span> 
 </pre></div>
 
     </div>
@@ -1226,13 +1218,13 @@ $$<p>And that is all the math we need.</p>
 
 <div class="output_subarea output_stream output_stderr output_text">
 <pre>epoch 1: 100%|██████████| 123/123 [00:09&lt;00:00, 12.35it/s, loss=0.377, metrics={'acc': 0.8201}]
-valid: 100%|██████████| 31/31 [00:01&lt;00:00, 30.88it/s, loss=0.36, metrics={'acc': 0.8221}]
+valid: 100%|██████████| 31/31 [00:01&lt;00:00, 30.88it/s, loss=0.36, metrics={'acc': 0.8221}] 
 epoch 2: 100%|██████████| 123/123 [00:10&lt;00:00, 11.19it/s, loss=0.356, metrics={'acc': 0.8338}]
 valid: 100%|██████████| 31/31 [00:01&lt;00:00, 25.33it/s, loss=0.376, metrics={'acc': 0.8307}]
-epoch 3: 100%|██████████| 123/123 [00:10&lt;00:00, 12.24it/s, loss=0.35, metrics={'acc': 0.8342}]
+epoch 3: 100%|██████████| 123/123 [00:10&lt;00:00, 12.24it/s, loss=0.35, metrics={'acc': 0.8342}] 
 valid: 100%|██████████| 31/31 [00:00&lt;00:00, 36.99it/s, loss=0.366, metrics={'acc': 0.8332}]
 epoch 4: 100%|██████████| 123/123 [00:09&lt;00:00, 13.05it/s, loss=0.348, metrics={'acc': 0.8359}]
-valid: 100%|██████████| 31/31 [00:00&lt;00:00, 37.37it/s, loss=0.363, metrics={'acc': 0.835}]
+valid: 100%|██████████| 31/31 [00:00&lt;00:00, 37.37it/s, loss=0.363, metrics={'acc': 0.835}] 
 epoch 5: 100%|██████████| 123/123 [00:09&lt;00:00, 12.87it/s, loss=0.345, metrics={'acc': 0.8379}]
 valid: 100%|██████████| 31/31 [00:00&lt;00:00, 33.53it/s, loss=0.358, metrics={'acc': 0.8375}]
 </pre>
@@ -1251,15 +1243,16 @@ valid: 100%|██████████| 31/31 [00:00&lt;00:00, 33.53it/s, lo
 <h2 id=" 2.-Conclusion-and-future-work">
 <a class="anchor" href="#%C2%A02.-Conclusion-and-future-work" aria-hidden="true"><span class="octicon octicon-link"></span></a> 2. Conclusion and future work<a class="anchor-link" href="#%C2%A02.-Conclusion-and-future-work"> </a>
 </h2>
-<p>In this post my intention was to illustrate how one can use <code>pytorch-widedeep</code> as a library for "standard DL for tabular data", i.e. without building wide and deep models and for problems that do not involve text and/or images (if you wanted to learn more about the library please visit the <a href="https://github.com/jrzaurin/pytorch-widedeep">repo</a>, the <a href="https://pytorch-widedeep.readthedocs.io/en/latest/index.html">documentation</a>, or the <a href="https://jrzaurin.github.io/infinitoml/">previous posts</a>).  To that aim the only component that we need is the <code>deeptabular</code> component, for which <code>pytorch-widedeep</code> comes with 3 models implemented "out of the box": <code>TabMlp</code>, <code>TabResnet</code> and <code>TabTransformer</code>. In this post I have explained their architecture in detail and how to use them within the library. In the no-so-distant future I intend to implement <a href="https://arxiv.org/abs/1908.07442">TabNet</a> [5], as well as performing a proper benchmarking exercise so I can set robust defaults and then release version <code>1.0</code>. Of course, you can help me by using the package in your datasets 🙂. If you found this post useful and you like the library, please give a star to the <a href="https://github.com/jrzaurin/pytorch-widedeep">repo</a>. Other than that, happy coding.</p>
+<p>In this post my intention was to illustrate how one can use <code>pytorch-widedeep</code> as a library for "standard DL for tabular data", i.e. without building wide and deep models and for problems that do not involve text and/or images (if you wanted to learn more about the library please visit the <a href="https://github.com/jrzaurin/pytorch-widedeep">repo</a>, the <a href="https://pytorch-widedeep.readthedocs.io/en/latest/index.html">documentation</a>, or the <a href="https://jrzaurin.github.io/infinitoml/">previous posts</a>).  To that aim the only component that we need is the <code>deeptabular</code> component, for which <code>pytorch-widedeep</code> comes with 3 models implemented "out of the box": <code>TabMlp</code>, <code>TabResnet</code> and <code>TabTransformer</code>. In this post I have explained their architecture in detail and how to use them within the library. In the no-so-distant future I intend to implement <a href="https://arxiv.org/abs/1908.07442">TabNet</a> and perhaps Node, as well as performing a proper benchmarking exercise so I can set robust defaults and then release version <code>1.0</code>. Of course, you can help me by using the package in your datasets 🙂. If you found this post useful and you like the library, please give a star to the <a href="https://github.com/jrzaurin/pytorch-widedeep">repo</a>. Other than that, happy coding.</p>
 <h2 id=" 3.-References">
 <a class="anchor" href="#%C2%A03.-References" aria-hidden="true"><span class="octicon octicon-link"></span></a> 3. References<a class="anchor-link" href="#%C2%A03.-References"> </a>
 </h2>
-<p>[1] TabTransformer: Tabular Data Modeling Using Contextual Embeddings. Xin Huang, Ashish Khetan, Milan Cvitkovic, Zohar Karnin, 2020. <a href="https://arxiv.org/abs/2012.06678">arXiv:2012.06678v1</a></p>
-<p>[2] Attention Is All You Need, Ashish Vaswani, Noam Shazeer, Niki Parmar, et al., 2017. <a href="https://arxiv.org/abs/1706.03762">arXiv:1706.03762v5</a></p>
-<p>[3] A Mathematical Theory of Attention, James Vuckovic, Aristide Baratin, Remi Tachet des Combes, 2020. <a href="https://arxiv.org/abs/2007.02876">arXiv:2007.02876v2</a></p>
-<p>[4] Fixed Encoder Self-Attention Patterns in Transformer-Based Machine Translation. Alessandro Raganato, Yves Scherrer, Jörg Tiedemann, 2020. <a href="https://arxiv.org/abs/2002.10260">arXiv:2002.10260v3</a></p>
-<p>[5] TabNet: Attentive Interpretable Tabular Learning, Sercan O. Arik, Tomas Pfister, <a href="https://arxiv.org/abs/1908.07442">arXiv:1908.07442v5</a></p>
+<p>[1] TabNet: Attentive Interpretable Tabular Learning, Sercan O. Arik, Tomas Pfister, <a href="https://arxiv.org/abs/1908.07442">arXiv:1908.07442v5</a></p>
+<p>[2] TabTransformer: Tabular Data Modeling Using Contextual Embeddings. Xin Huang, Ashish Khetan, Milan Cvitkovic, Zohar Karnin, 2020. <a href="https://arxiv.org/abs/2012.06678">arXiv:2012.06678v1</a></p>
+<p>[3] Attention Is All You Need, Ashish Vaswani, Noam Shazeer, Niki Parmar, et al., 2017. <a href="https://arxiv.org/abs/1706.03762">arXiv:1706.03762v5</a></p>
+<p>[4] A Mathematical Theory of Attention, James Vuckovic, Aristide Baratin, Remi Tachet des Combes, 2020. <a href="https://arxiv.org/abs/2007.02876">arXiv:2007.02876v2</a></p>
+<p>[5] Fixed Encoder Self-Attention Patterns in Transformer-Based Machine Translation. Alessandro Raganato, Yves Scherrer, Jörg Tiedemann, 2020. <a href="https://arxiv.org/abs/2002.10260">arXiv:2002.10260v3</a></p>
+<p>[6] Neural Oblivious Decision Ensembles for Deep Learning on Tabular Data. Sergei Popov, Stanislav Morozov, Artem Babenko, <a href="https://arxiv.org/abs/1909.06312">arXiv:1909.06312v2</a></p>
 
 </div>
 </div>
