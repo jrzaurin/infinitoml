@@ -33,7 +33,7 @@ layout: notebook
 <p>To start with, as always, just install the package:</p>
 <div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">pytorch</span><span class="o">-</span><span class="n">widedeep</span>
 </pre></div>
-<p>This will install <code>v0.4.8</code>, hopefully the last beta version (check the repo or this <a href="https://jrzaurin.github.io/infinitoml/2020/12/06/pytorch-widedeep.html">post</a> for a caveat in the installation if you are using Mac, python 3.8 or pytorch 1.7+). Code-wise I think this could be already <code>v1</code>, but before that I want to try it in a few more datasets and select good default values. In addition, I also intend to implement other algorithms, in particular <a href="https://arxiv.org/abs/1908.07442">TabNet</a> [1], for which a very nice <a href="https://github.com/dreamquark-ai/tabnet">implementation</a> already exists.</p>
+<p>This will install <code>v0.4.8</code>, hopefully the last beta version*. Code-wise I think this could be already <code>v1</code>, but before that I want to try it in a few more datasets and select good default values. In addition, I also intend to implement other algorithms, in particular <a href="https://arxiv.org/abs/1908.07442">TabNet</a> [1], for which a very nice <a href="https://github.com/dreamquark-ai/tabnet">implementation</a> already exists.</p>
 <p>Moving on, and as I mentioned earlier, <code>pytorch-widedeep</code>'s main goal is to facilitate the combination of images and text with tabular data via wide and deep models. To that aim, <a href="https://pytorch-widedeep.readthedocs.io/en/latest/model_components.html">wide and deep models</a> can be built with up to four model components: <code>wide</code>, <code>deeptabular</code>, <code>deeptext</code> and <code>deepimage</code>, that will take care of the different types of input datasets ("standard" tabular, i.e. numerical and categorical features, text and images). This post focuses only on the so-called <code>deeptabular</code> component, and the 3 different models available in this library that can be used to build that component. Nonetheless, and for completion, I will briefly describe the remaining components first.</p>
 <p>The <code>wide</code> component of a wide and deep model is simply a liner model, and in <code>pytorch-widedeep</code> such model can be created via the <code>Wide</code> class. In the case of the <code>deeptext</code> component, <code>pytorch-widedeep</code> offers one model, available via the <code>DeepText</code> class. <code>DeepText</code> builds a simple stack of LSTMs, i.e. a standard DL text classifier or regressor, with flexibility regarding the use of pre-trained word embeddings, of a Fully Connected Head (FC-Head), etc. For the <code>deepimage</code> component, <code>pytorch-widedeep</code> includes two alternatives: a pre-trained Resnet model or a "standard" stack of CNNs to be trained from scratch. The two are available via the <code>DeepImage</code> class which, as in the case of <code>DeepText</code>, offers some flexibility when building the architecture.</p>
 <p>To clarify the use of the term "<em>model</em>" and Wide and Deep "<em>model component</em>" (in case there is some confusion), let's have a look to the following code:</p>
@@ -55,6 +55,7 @@ layout: notebook
 <span class="o">...</span>
 </pre></div>
 <p>If you want to learn more about different model components and the models available in <code>pytorch-widedeep</code> please, have a look to the <a href="https://github.com/jrzaurin/pytorch-widedeep/tree/master/examples">Examples</a> folder in the repo, the <a href="https://pytorch-widedeep.readthedocs.io/en/latest/model_components.html">documentation</a> or the <a href="https://jrzaurin.github.io/infinitoml/">companion posts</a>. Let's now take a deep dive into the models available for the <code>deeptabular</code> component</p>
+<p>$^*$ <em>check the repo or this <a href="https://jrzaurin.github.io/infinitoml/2020/12/06/pytorch-widedeep.html">post</a> for a caveat in the installation if you are using Mac, python 3.8 or Pytorch 1.7+. <strong>Note that this is not directly related with the package</strong>, but the interplay between Mac and OpenMP, and the new defaults of the <code>multiprocessing</code> library for Mac).</em></p>
 <h2 id="1.-The-deeptabular-component">1. The <code>deeptabular</code> component<a class="anchor-link" href="#1.-The-deeptabular-component"> </a></h2><p>As I was developing the package I realised that perhaps one of the most interesting offerings in <code>pytorch-widedeep</code> was related to the models available for the <code>deeptabular</code> component. Remember that each component can be used independently in isolation. Building a <code>WideDeep</code> model comprised only by a <code>deeptabular</code> component would be what is normally referred as DL for tabular data. Of course, such model is not a wide and deep model, is "just" deep.</p>
 <p>Currently, <code>pytorch-widedeep</code> offers three models that can be used as the <code>deeptabular</code> component. In order of complexity, these are:</p>
 <ul>
@@ -551,16 +552,16 @@ layout: notebook
 <div class="output_area">
 
 <div class="output_subarea output_stream output_stderr output_text">
-<pre>epoch 1: 100%|██████████| 123/123 [00:02&lt;00:00, 50.52it/s, loss=0.4, metrics={&#39;acc&#39;: 0.8083}]  
-valid: 100%|██████████| 31/31 [00:00&lt;00:00, 104.99it/s, loss=0.367, metrics={&#39;acc&#39;: 0.811}]
-epoch 2: 100%|██████████| 123/123 [00:02&lt;00:00, 44.74it/s, loss=0.364, metrics={&#39;acc&#39;: 0.8284}]
-valid: 100%|██████████| 31/31 [00:00&lt;00:00, 77.02it/s, loss=0.359, metrics={&#39;acc&#39;: 0.8287}]
-epoch 3: 100%|██████████| 123/123 [00:02&lt;00:00, 48.33it/s, loss=0.357, metrics={&#39;acc&#39;: 0.8312}]
-valid: 100%|██████████| 31/31 [00:00&lt;00:00, 82.78it/s, loss=0.355, metrics={&#39;acc&#39;: 0.8315}]
-epoch 4: 100%|██████████| 123/123 [00:02&lt;00:00, 50.34it/s, loss=0.355, metrics={&#39;acc&#39;: 0.8322}]
-valid: 100%|██████████| 31/31 [00:00&lt;00:00, 98.06it/s, loss=0.353, metrics={&#39;acc&#39;: 0.8324}] 
-epoch 5: 100%|██████████| 123/123 [00:02&lt;00:00, 51.45it/s, loss=0.353, metrics={&#39;acc&#39;: 0.8341}]
-valid: 100%|██████████| 31/31 [00:00&lt;00:00, 105.90it/s, loss=0.347, metrics={&#39;acc&#39;: 0.8345}]
+<pre>epoch 1: 100%|██████████| 123/123 [00:02&lt;00:00, 59.30it/s, loss=0.4, metrics={&#39;acc&#39;: 0.8073}]  
+valid: 100%|██████████| 31/31 [00:00&lt;00:00, 111.33it/s, loss=0.392, metrics={&#39;acc&#39;: 0.807}]
+epoch 2: 100%|██████████| 123/123 [00:02&lt;00:00, 61.05it/s, loss=0.363, metrics={&#39;acc&#39;: 0.827}] 
+valid: 100%|██████████| 31/31 [00:00&lt;00:00, 122.68it/s, loss=0.376, metrics={&#39;acc&#39;: 0.8253}]
+epoch 3: 100%|██████████| 123/123 [00:01&lt;00:00, 71.14it/s, loss=0.359, metrics={&#39;acc&#39;: 0.8283}]
+valid: 100%|██████████| 31/31 [00:00&lt;00:00, 120.26it/s, loss=0.368, metrics={&#39;acc&#39;: 0.8281}]
+epoch 4: 100%|██████████| 123/123 [00:01&lt;00:00, 73.66it/s, loss=0.354, metrics={&#39;acc&#39;: 0.8321}]
+valid: 100%|██████████| 31/31 [00:00&lt;00:00, 122.50it/s, loss=0.361, metrics={&#39;acc&#39;: 0.832}] 
+epoch 5: 100%|██████████| 123/123 [00:01&lt;00:00, 73.94it/s, loss=0.353, metrics={&#39;acc&#39;: 0.8329}]
+valid: 100%|██████████| 31/31 [00:00&lt;00:00, 119.44it/s, loss=0.359, metrics={&#39;acc&#39;: 0.833}] 
 </pre>
 </div>
 </div>
@@ -697,7 +698,7 @@ valid: 100%|██████████| 31/31 [00:00&lt;00:00, 105.90it/s, l
 
 <div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>As we did previously with the <code>TabMlp</code>, let's "walk through" the model. As we can see, the object <code>model</code> is an instance of a <code>WideDeep</code> model formed by a single component, <code>deeptabular</code> that is a <code>TabResnet</code> model and an MLP named <code>tab_resnet_mlp</code>. The <code>TabResnet</code> model is formed by a series of embeddings that are concatenated themselves, and then further concatenated with the normalised continuous columns. The resulting tensor of dim <code>(bsz, 44)</code> is then passed through a <code>tab_resnet</code> component, which is comprised by two so-called "dense" Resnet blocks. The output of one Resnet block is the input of the next. Therefore, when setting <code>blocks_dim = [200, 100, 100]</code> we are generating two blocks with input/output 200/100 and 100/100 respectively. The output of the second Resnet blocks, of dim <code>(bsz, 100)</code> is passed through a 2-layer MLP, named <code>tab_resnet_mlp</code> and finally "plugged" into the output neuron. In summary: <code>Embedding</code> + continuous + <code>DenseResnet</code> + <code>MLP</code>.</p>
+<p>As we did previously with the <code>TabMlp</code>, let's "walk through" the model. In this case, model is an instance of a <code>WideDeep</code> object formed by a single component, <code>deeptabular</code> that is a <code>TabResnetmodel</code>. <code>TabResnet</code> is formed by a series of <code>Embedding</code> layers (e.g. <code>emb_layer_education</code>) a series of so-called dense Resnet blocks (<code>tab_resnet</code>) and a MLP (<code>tab_resnet_mlp</code>). The embeddings are concatenated themselves and then, further concatenated with the normalised continuous columns. The resulting tensor of dim <code>(bsz, 44)</code> is then passed through two dense Resnet blocks. The output of one Resnet block is the input of the next. Therefore, when setting <code>blocks_dim = [200, 100, 100]</code> we are generating two blocks with input/output 200/100 and 100/100 respectively. The output of the second Resnet blocks, of dim <code>(bsz, 100)</code> is passed through <code>tab_resnet_mlp</code> , the 2-layer MLP, and finally "plugged" into the output neuron. In summary: Embeddings + continuous + dense Renset + MLP.</p>
 <p>To run it, the code is, as one might expect identical to the one shown before for the <code>TabMlp</code>.</p>
 
 </div>
@@ -724,16 +725,16 @@ valid: 100%|██████████| 31/31 [00:00&lt;00:00, 105.90it/s, l
 <div class="output_area">
 
 <div class="output_subarea output_stream output_stderr output_text">
-<pre>epoch 1: 100%|██████████| 123/123 [00:04&lt;00:00, 24.67it/s, loss=0.379, metrics={&#39;acc&#39;: 0.8187}]
-valid: 100%|██████████| 31/31 [00:00&lt;00:00, 91.58it/s, loss=0.354, metrics={&#39;acc&#39;: 0.8218}] 
-epoch 2: 100%|██████████| 123/123 [00:05&lt;00:00, 22.76it/s, loss=0.356, metrics={&#39;acc&#39;: 0.8337}]
-valid: 100%|██████████| 31/31 [00:00&lt;00:00, 62.59it/s, loss=0.352, metrics={&#39;acc&#39;: 0.8341}]
-epoch 3: 100%|██████████| 123/123 [00:05&lt;00:00, 22.53it/s, loss=0.351, metrics={&#39;acc&#39;: 0.8351}]
-valid: 100%|██████████| 31/31 [00:00&lt;00:00, 98.51it/s, loss=0.351, metrics={&#39;acc&#39;: 0.8354}] 
-epoch 4: 100%|██████████| 123/123 [00:03&lt;00:00, 31.24it/s, loss=0.349, metrics={&#39;acc&#39;: 0.8354}]
-valid: 100%|██████████| 31/31 [00:00&lt;00:00, 101.44it/s, loss=0.348, metrics={&#39;acc&#39;: 0.836}]
-epoch 5: 100%|██████████| 123/123 [00:04&lt;00:00, 30.44it/s, loss=0.346, metrics={&#39;acc&#39;: 0.8363}]
-valid: 100%|██████████| 31/31 [00:00&lt;00:00, 94.39it/s, loss=0.345, metrics={&#39;acc&#39;: 0.8371}] 
+<pre>epoch 1: 100%|██████████| 123/123 [00:04&lt;00:00, 30.40it/s, loss=0.385, metrics={&#39;acc&#39;: 0.8108}]
+valid: 100%|██████████| 31/31 [00:00&lt;00:00, 105.50it/s, loss=0.36, metrics={&#39;acc&#39;: 0.8144}]
+epoch 2: 100%|██████████| 123/123 [00:04&lt;00:00, 30.05it/s, loss=0.354, metrics={&#39;acc&#39;: 0.8326}]
+valid: 100%|██████████| 31/31 [00:00&lt;00:00, 97.42it/s, loss=0.352, metrics={&#39;acc&#39;: 0.8337}] 
+epoch 3: 100%|██████████| 123/123 [00:03&lt;00:00, 30.95it/s, loss=0.351, metrics={&#39;acc&#39;: 0.834}] 
+valid: 100%|██████████| 31/31 [00:00&lt;00:00, 105.48it/s, loss=0.351, metrics={&#39;acc&#39;: 0.8354}]
+epoch 4: 100%|██████████| 123/123 [00:03&lt;00:00, 31.33it/s, loss=0.349, metrics={&#39;acc&#39;: 0.8352}]
+valid: 100%|██████████| 31/31 [00:00&lt;00:00, 108.03it/s, loss=0.349, metrics={&#39;acc&#39;: 0.8367}]
+epoch 5: 100%|██████████| 123/123 [00:03&lt;00:00, 31.99it/s, loss=0.346, metrics={&#39;acc&#39;: 0.8359}]
+valid: 100%|██████████| 31/31 [00:00&lt;00:00, 107.30it/s, loss=0.348, metrics={&#39;acc&#39;: 0.8378}]
 </pre>
 </div>
 </div>
@@ -898,7 +899,7 @@ $$<p>And that is all the math we need.</p>
           (dropout): Dropout(p=0.1, inplace=False)
         )
       )
-      (blks): Sequential(
+      (tab_transformer_blks): Sequential(
         (block0): TransformerEncoder(
           (self_attn): MultiHeadedAttention(
             (dropout): Dropout(p=0.1, inplace=False)
@@ -993,7 +994,7 @@ $$<p>And that is all the math we need.</p>
 
 <div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>If you go to the original post and you have a look to the model architecture, you will see that, as always, model is an instance of a <code>WideDeep</code> object formed by a single component, <code>deeptabular</code> that is <code>TabTransformermodel</code> and an MLP, named <code>tab_transformer_nlp</code> . <code>TabTranformer</code> is formed by a series of embeddings with the only particular aspect being that the embeddings are of class <code>SharedEmbeddings</code>, which I described before. These embeddings are stacked and passed through three transformer blocks. The output for all the categorical columns is concatenated, resulting in a tensor of dim <code>(bsz, 192)</code> where 192 is equal to the number of categorical columns (6) times the embedding dim (32). This tensor is then concatenated with the "layernormed" continuous columns, resulting in a tensor of dim <code>(bsz, 196)</code>. As usual, this tensor goes through <code>tab_transformer_mlp</code> , which following the guidance in the paper ("<em>The MLP layer sizes are set to {4 × l, 2 × l}, where l is the size of its input.</em>") is <code>[784 -&gt; 392]</code>, and "off we go". In summary <code>SharedEmbeddings</code> + continuous + <code>TransformerEncoder</code> + MLP.</p>
+<p>As we can see, the model is an instance of a <code>WideDeep</code> object formed by a single component, <code>deeptabular</code> that is <code>TabTransformer</code> model. <code>TabTransformer</code> is formed by a series of embedding layers (e.g. <code>emb_layer_education</code>) , a series of transformer encoder blocks$^*$ (<code>tab_transformer_blks</code>) and a MLP (<code>tab_transformer_mlp</code>). The embeddings here are of class <code>SharedEmbeddings</code>, which I described before. These embeddings are stacked and passed through three transformer blocks. The output for all the categorical columns is concatenated, resulting in a tensor of dim <code>(bsz, 192)</code> where 192 is equal to the number of categorical columns (6) times the embedding dim (32). This tensor is then concatenated with the "layernormed" continuous columns, resulting in a tensor of dim <code>(bsz, 196)</code>. As usual, this tensor goes through tab_transformer_mlp , which following the guidance in the paper ("<em>The MLP layer sizes are set to {4 × l, 2 × l}, where l is the size of its input.</em>") is <code>[784 -&gt; 392]</code> , and "off we go". In summary <code>SharedEmbeddings</code> + continuous + Transformer encoder blocks + MLP.</p>
 <p>To run it, the code is, as one might expect identical to the one shown before for the <code>TabMlp</code> and <code>TabRenset</code>.</p>
 
 </div>
@@ -1020,16 +1021,16 @@ $$<p>And that is all the math we need.</p>
 <div class="output_area">
 
 <div class="output_subarea output_stream output_stderr output_text">
-<pre>epoch 1: 100%|██████████| 123/123 [00:09&lt;00:00, 12.35it/s, loss=0.377, metrics={&#39;acc&#39;: 0.8201}]
-valid: 100%|██████████| 31/31 [00:01&lt;00:00, 30.88it/s, loss=0.36, metrics={&#39;acc&#39;: 0.8221}] 
-epoch 2: 100%|██████████| 123/123 [00:10&lt;00:00, 11.19it/s, loss=0.356, metrics={&#39;acc&#39;: 0.8338}]
-valid: 100%|██████████| 31/31 [00:01&lt;00:00, 25.33it/s, loss=0.376, metrics={&#39;acc&#39;: 0.8307}]
-epoch 3: 100%|██████████| 123/123 [00:10&lt;00:00, 12.24it/s, loss=0.35, metrics={&#39;acc&#39;: 0.8342}] 
-valid: 100%|██████████| 31/31 [00:00&lt;00:00, 36.99it/s, loss=0.366, metrics={&#39;acc&#39;: 0.8332}]
-epoch 4: 100%|██████████| 123/123 [00:09&lt;00:00, 13.05it/s, loss=0.348, metrics={&#39;acc&#39;: 0.8359}]
-valid: 100%|██████████| 31/31 [00:00&lt;00:00, 37.37it/s, loss=0.363, metrics={&#39;acc&#39;: 0.835}] 
-epoch 5: 100%|██████████| 123/123 [00:09&lt;00:00, 12.87it/s, loss=0.345, metrics={&#39;acc&#39;: 0.8379}]
-valid: 100%|██████████| 31/31 [00:00&lt;00:00, 33.53it/s, loss=0.358, metrics={&#39;acc&#39;: 0.8375}]
+<pre>epoch 1: 100%|██████████| 123/123 [00:09&lt;00:00, 13.42it/s, loss=0.376, metrics={&#39;acc&#39;: 0.8236}]
+valid: 100%|██████████| 31/31 [00:00&lt;00:00, 34.98it/s, loss=0.373, metrics={&#39;acc&#39;: 0.8228}]
+epoch 2: 100%|██████████| 123/123 [00:09&lt;00:00, 13.31it/s, loss=0.353, metrics={&#39;acc&#39;: 0.8331}]
+valid: 100%|██████████| 31/31 [00:00&lt;00:00, 37.92it/s, loss=0.368, metrics={&#39;acc&#39;: 0.8313}]
+epoch 3: 100%|██████████| 123/123 [00:09&lt;00:00, 13.30it/s, loss=0.349, metrics={&#39;acc&#39;: 0.8354}]
+valid: 100%|██████████| 31/31 [00:00&lt;00:00, 34.20it/s, loss=0.372, metrics={&#39;acc&#39;: 0.833}] 
+epoch 4: 100%|██████████| 123/123 [00:09&lt;00:00, 12.91it/s, loss=0.347, metrics={&#39;acc&#39;: 0.8376}]
+valid: 100%|██████████| 31/31 [00:00&lt;00:00, 36.76it/s, loss=0.369, metrics={&#39;acc&#39;: 0.8351}]
+epoch 5: 100%|██████████| 123/123 [00:10&lt;00:00, 12.20it/s, loss=0.344, metrics={&#39;acc&#39;: 0.8404}]
+valid: 100%|██████████| 31/31 [00:00&lt;00:00, 36.31it/s, loss=0.367, metrics={&#39;acc&#39;: 0.8376}]
 </pre>
 </div>
 </div>
@@ -1042,6 +1043,7 @@ valid: 100%|██████████| 31/31 [00:00&lt;00:00, 33.53it/s, lo
 
 <div class="cell border-box-sizing text_cell rendered"><div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
+<p>$^*$ <em>Note that there is a small inconsistency in the naming of the</em> <code>TabTransformer</code> <em>main components relative to the other two models. If you installed the package via pypi, the transformer encoder blocks are named</em> <code>blks</code>. <em>A name more consistent with the other models would be, for example</em>, <code>tab_transformer_blks</code>. <em>I realised of such inconsistency just after publishing <code>v0.4.8</code> to pypi. Such small issue is not worthy of another sub-version. However, this is fixed if you install the package from github (as I have done for this post) and both the pypi and the github versions will be consistent in future releases</em></p>
 <h2 id="&#160;2.-Conclusion-and-future-work">&#160;2. Conclusion and future work<a class="anchor-link" href="#&#160;2.-Conclusion-and-future-work"> </a></h2><p>In this post my intention was to illustrate how one can use <code>pytorch-widedeep</code> as a library for "standard DL for tabular data", i.e. without building wide and deep models and for problems that do not involve text and/or images (if you wanted to learn more about the library please visit the <a href="https://github.com/jrzaurin/pytorch-widedeep">repo</a>, the <a href="https://pytorch-widedeep.readthedocs.io/en/latest/index.html">documentation</a>, or the <a href="https://jrzaurin.github.io/infinitoml/">previous posts</a>).  To that aim the only component that we need is the <code>deeptabular</code> component, for which <code>pytorch-widedeep</code> comes with 3 models implemented "out of the box": <code>TabMlp</code>, <code>TabResnet</code> and <code>TabTransformer</code>. In this post I have explained their architecture in detail and how to use them within the library. In the no-so-distant future I intend to implement <a href="https://arxiv.org/abs/1908.07442">TabNet</a> and perhaps Node, as well as performing a proper benchmarking exercise so I can set robust defaults and then release version <code>1.0</code>. Of course, you can help me by using the package in your datasets 🙂. If you found this post useful and you like the library, please give a star to the <a href="https://github.com/jrzaurin/pytorch-widedeep">repo</a>. Other than that, happy coding.</p>
 <h2 id="&#160;3.-References">&#160;3. References<a class="anchor-link" href="#&#160;3.-References"> </a></h2><p>[1] TabNet: Attentive Interpretable Tabular Learning, Sercan O. Arik, Tomas Pfister, <a href="https://arxiv.org/abs/1908.07442">arXiv:1908.07442v5</a></p>
 <p>[2] TabTransformer: Tabular Data Modeling Using Contextual Embeddings. Xin Huang, Ashish Khetan, Milan Cvitkovic, Zohar Karnin, 2020. <a href="https://arxiv.org/abs/2012.06678">arXiv:2012.06678v1</a></p>
